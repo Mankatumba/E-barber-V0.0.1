@@ -1,0 +1,420 @@
+okay le genie, l'architecture a ete respecter et voici le contenu de chaue ficher. ton travail et de parcourir 
+chaque ligne de code et de trouver d'ou peut provenir l'erreur afi qu'on passe a autre chose.
+public/
+    assets/
+    logs/ error.log : vide
+    sql/e_barber_schema.sql : vide
+    vendor/
+    **************************************************************************************
+    .htaccess : 
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+    ***************************************************************************************
+    index.php : 
+        <?php
+    session_start();
+
+    require_once __DIR__ . '/../src/config/constants.php';
+    require_once __DIR__ . '/../src/config/database.php';
+    require_once __DIR__ . '/../src/core/Router.php';
+    require_once __DIR__ . '/../src/helpers/Auth.php';
+
+    spl_autoload_register(function ($class) {
+        $paths = [
+            __DIR__ . '/../src/controllers/' . $class . '.php',
+            __DIR__ . '/../src/models/' . $class . '.php',
+            __DIR__ . '/../src/core/' . $class . '.php'
+        ];
+        foreach ($paths as $path) {
+            if (file_exists($path)) {
+                require_once $path;
+                return;
+            }
+        }
+    });
+
+    $url = $_GET['url'] ?? '';
+    $router = new Router($url);
+    $router->dispatch();
+********************************************************************************************
+src/
+    config/
+        constants.php : 
+                <?php
+        // Nom de l'application
+        define('APP_NAME', 'E-Barber');
+
+        // URL de base de l’application (à ajuster si besoin)
+        define('BASE_URL', 'http://localhost/e-barber/public');
+
+        // Chemin absolu vers le dossier public
+        define('PUBLIC_PATH', dirname(__DIR__, 2) . '/public');
+
+        // Dossier pour stocker les images uploadées
+        define('UPLOADS_PATH', PUBLIC_PATH . '/assets/uploads');
+        define('UPLOADS_URL', BASE_URL . '/assets/uploads');
+
+        // Fuseau horaire par défaut (Lubumbashi)
+        date_default_timezone_set('Africa/Lubumbashi');
+
+        // Messages système (tu peux les traduire ici globalement si besoin)
+        define('LOGIN_ERROR', 'Email ou mot de passe incorrect');
+        define('ACCESS_DENIED', 'Accès refusé');
+    *****************************************************************************************
+        database.php :
+                <?php
+        // database.php
+
+        $host = '127.0.0.1';      // adresse du serveur MySQL
+        $db   = 'e_barber';       // nom de ta base de données
+        $user = 'root';           // utilisateur MySQL (par défaut sous XAMPP : root)
+        $pass = '';               // mot de passe (vide sous XAMPP par défaut)
+        $charset = 'utf8mb4';     // charset recommandé
+
+        $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+
+        $options = [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Gestion des erreurs en exceptions
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // fetch par défaut en tableau associatif
+            PDO::ATTR_EMULATE_PREPARES   => false,                  // pour utiliser les vraies requêtes préparées
+        ];
+
+        try {
+            $pdo = new PDO($dsn, $user, $pass, $options);
+            return $pdo;
+        } catch (PDOException $e) {
+            // En cas d’erreur de connexion, on affiche un message simple (adapter selon besoin)
+            echo 'Erreur de connexion à la base de données : ' . $e->getMessage();
+            exit;
+        }
+**********************************************************************************************
+        routes.php : vide
+    *****    ***********************************************************************************
+
+    controllers/
+        AdminController.php :
+                    <?php
+
+        class AdminController
+        {
+            public function __construct()
+            {
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+            }
+
+            public function dashboard()
+            {
+                // Vérification de la session et du rôle
+                if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'super_admin') {
+                    header('Location: ' . BASE_URL . '/auth'); // <- en minuscule
+                    exit;
+                }
+
+                // Connexion à la base de données
+                $pdo = require __DIR__ . '/../config/database.php';
+
+                // Récupérer les données à afficher
+                $salons = $pdo->query("SELECT COUNT(*) FROM salons")->fetchColumn();
+                $clients = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'client'")->fetchColumn();
+
+                // Chargement de la vue dashboard
+                require_once __DIR__ . '/../views/admin/dashboard.php';
+            }
+        }
+
+        *************************************************************************************
+        ApiController.php : vide
+
+        ************************************************************************************
+        AuthController.php:
+        <?php
+
+        class AuthController
+        {
+            public function __construct()
+            {
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+            }
+
+            public function index()
+            {
+                if (isset($_SESSION['user'])) {
+                    $role = $_SESSION['user']['role'];
+                    switch ($role) {
+                        case 'super_admin':
+                            header('Location: /e-barber/public/admin/dashboard');
+
+                            break;
+                        case 'salon':
+                            header('Location: ' . BASE_URL . '/salon/dashboard');
+                            break;
+                        case 'client':
+                            header('Location: ' . BASE_URL . '/client/dashboard');
+                            break;
+                        default:
+                            session_destroy();
+                            header('Location: ' . BASE_URL . '/auth?error=unknown_role');
+                    }
+                    exit;
+                }
+
+                require_once __DIR__ . '/../../views/auth/login.php';
+            }
+
+            public function login()
+            {
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $email = $_POST['email'] ?? '';
+                    $password = $_POST['password'] ?? '';
+
+                    $pdo = require __DIR__ . '/../config/database.php';
+
+                    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+                    $stmt->execute([$email]);
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    // Vérification du mot de passe en clair (non sécurisé, pour développement)
+                    if ($user && $password === $user['password']) {
+                        $_SESSION['user'] = $user;
+
+                        switch ($user['role']) {
+                            case 'super_admin':
+                                header('Location: ' . BASE_URL . '/admin/dashboard');
+                                break;
+                            case 'salon':
+                                header('Location: ' . BASE_URL . '/salon/dashboard');
+                                break;
+                            case 'client':
+                                header('Location: ' . BASE_URL . '/client/dashboard');
+                                break;
+                            default:
+                                session_destroy();
+                                header('Location: ' . BASE_URL . '/auth?error=unknown_role');
+                        }
+                        exit;
+                    } else {
+                        $error = "Email ou mot de passe incorrect.";
+                        require_once __DIR__ . '/../../views/auth/login.php';
+                    }
+                } else {
+                    require_once __DIR__ . '/../../views/auth/login.php';
+                }
+            }
+
+            public function logout()
+            {
+                session_destroy();
+                header('Location: ' . BASE_URL . '/auth');
+                exit;
+            }
+        }
+
+
+        ***************************************************************************************
+        ClientController.php : vide
+
+
+        ***************************************************************************************
+        RdvController.php : vide
+
+        *************************************************************************************
+        SalonController.php : vide
+    
+*******************************************************************************************
+    core/
+        Controller.php : vide
+
+    **********************************************************************************
+        Model.php : vide
+
+    ***************************************************************************************
+        Router.php : 
+        <?php
+
+        class Router
+        {
+            protected $url;
+
+            public function __construct($url)
+            {
+                // Nettoyage de l'URL et découpage
+                $this->url = trim($url, '/');
+            }
+
+            public function dispatch()
+            {
+                $segments = explode('/', $this->url);
+
+                $controllerName = !empty($segments[0]) ? ucfirst($segments[0]) . 'Controller' : 'AuthController';
+                $methodName = $segments[1] ?? 'index';
+                $params = array_slice($segments, 2);
+
+                $controllerFile = __DIR__ . '/../controllers/' . $controllerName . '.php';
+
+                if (file_exists($controllerFile)) {
+                    require_once $controllerFile;
+                    if (class_exists($controllerName)) {
+                        $controller = new $controllerName();
+                        if (method_exists($controller, $methodName)) {
+                            call_user_func_array([$controller, $methodName], $params);
+                        } else {
+                            $this->error("Méthode [$methodName] introuvable dans $controllerName");
+                        }
+                    } else {
+                        $this->error("Contrôleur [$controllerName] inexistant");
+                    }
+                } else {
+                    $this->error("Fichier de contrôleur [$controllerName] manquant");
+                }
+            }
+
+            protected function error($message)
+            {
+                http_response_code(404);
+                echo "<h1>404 - Not Found</h1><p>$message</p>";
+                exit;
+            }
+        }
+
+
+    ****************************************************************************************
+        View.php : vide
+
+    ****************************************************************************************
+
+     helpers/
+        Auth.php :
+        <?php
+
+        class Auth
+        {
+            public static function check()
+            {
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+                return isset($_SESSION['user']);
+            }
+
+            public static function user()
+            {
+                if (self::check()) {
+                    return $_SESSION['user'];
+                }
+                return null;
+            }
+
+            public static function checkRole($role)
+            {
+                if (self::check()) {
+                    return $_SESSION['user']['role'] === $role;
+                }
+                return false;
+            }
+
+            public static function logout()
+            {
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+                session_destroy();
+            }
+        }
+
+
+        *************************************************************************************
+        Geo.php : vide
+        ************************************************************************************
+        Upload.php : vide
+        ***********************************************************************************
+        Validator : vide
+***********************************************************************************************
+    models/
+        Avis.php :
+
+    ******************************************************************************************
+        Favori.php :
+    ****************************************************************************************
+        Horaire.php :
+    *****************************************************************************************
+        Photo.php : vide
+    ****************************************************************************************
+        Rdv.php : vide
+    ***************************************************************************************
+        Salon.php : vide
+    **************************************************************************************
+        Service.php : vide
+    *************************************************************************************
+    User.php : vide
+****************************************************************************************
+views/
+    admin/
+        dashboard.php :
+        <?php if ($_SESSION['user']['role'] === 'super_admin') : ?>
+            
+        <?php endif; ?>
+
+
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="UTF-8">
+            <title>Dashboard Super Admin</title>
+        </head>
+        <body>
+            <h1>Bienvenue, <?= htmlspecialchars($_SESSION['user']['name']) ?></h1>
+            <p><strong>Nombre de salons :</strong> <?= $salons ?></p>
+            <p><strong>Nombre de clients :</strong> <?= $clients ?></p>
+
+            <p><a href="/auth/logout">Se déconnecter</a></p>
+        </body>
+        </html>
+
+
+    ************************************************************************************
+    auth/
+        login.php : 
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="UTF-8">
+            <title>Connexion</title>
+        </head>
+        <body>
+            <h2>Connexion</h2>
+            <?php if (isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
+            <form method="POST" action="/auth/login">
+                <label>Email :</label><br>
+                <input type="email" name="email" required><br><br>
+                <label>Mot de passe :</label><br>
+                <input type="password" name="password" required><br><br>
+                <button type="submit">Se connecter</button>
+            </form>
+        </body>
+        </html>
+
+
+****************************************************************************************
+        register.php : vide
+
+*****************************************************************************************  
+     client/ 
+     layouts/
+     salon/
+*************************************************************************************
+.env :
+    APP_ENV=development
+    BASE_URL=http://localhost/e-barber/public
+    DB_HOST=127.0.0.1
+    DB_NAME=e_barber
+    DB_USER=root
+    DB_PASS=
+***********************************************************************************
+composer.json : vide
+

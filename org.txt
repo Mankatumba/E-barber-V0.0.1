@@ -1,0 +1,343 @@
+ARCHITECTURE : 
+e-barber/
+│
+├── public/                             # Racine accessible depuis le web
+│   ├── index.php                       # Front controller
+│   ├── .htaccess                       # URL rewriting (mod_rewrite)
+│   └── assets/                         # Fichiers statiques
+│       ├── css/
+│       ├── js/
+│       └── uploads/                    # Photos des salons, profils, etc.
+│
+├── src/                                # Source de l’application
+│   ├── config/
+│   │   ├── constants.php               # Constantes globales
+│   │   ├── database.php                # Connexion PDO à MySQL
+│   │   └── routes.php                  # Définition des routes
+│   │
+│   ├── core/                           # Composants du noyau MVC
+│   │   ├── Controller.php              # Classe parent des contrôleurs
+│   │   ├── Model.php                   # Classe parent des modèles
+│   │   ├── View.php                    # Gestion du rendu des vues
+│   │   └── Router.php                  # Routage URL → contrôleurs
+│   │
+│   ├── controllers/
+│   │   ├── AuthController.php
+│   │   ├── SalonController.php
+│   │   ├── ClientController.php
+│   │   ├── AdminController.php
+│   │   ├── RdvController.php
+│   │   └── ApiController.php          # Géolocalisation, AJAX, etc.
+│   │
+│   ├── models/
+│   │   ├── User.php
+│   │   ├── Salon.php
+│   │   ├── Horaire.php
+│   │   ├── Service.php
+│   │   ├── Rdv.php
+│   │   ├── Favori.php
+│   │   ├── Avis.php
+│   │   └── Photo.php
+│   │
+│   ├── views/
+│   │   ├── layouts/                   # Templates partagés
+│   │   │   ├── header.php
+│   │   │   ├── footer.php
+│   │   │   └── menu.php
+│   │   ├── auth/
+│   │   │   ├── login.php
+│   │   │   └── register.php
+│   │   ├── salon/
+│   │   ├── client/
+│   │   └── admin/
+│   │
+│   ├── helpers/
+│   │   ├── Auth.php                   # Authentification, sessions
+│   │   ├── Validator.php              # Validation des inputs
+│   │   ├── Upload.php                 # Gestion fichiers (images)
+│   │   └── Geo.php                    # Outils de géolocalisation
+│
+├── sql/
+│   └── e_barber_schema.sql            # Structure complète de la BDD
+│
+├── logs/
+│   └── error.log
+│
+├── vendor/                            # Si Composer est utilisé
+│
+├── .env                               # Variables d’environnement
+├── composer.json                      # Dépendances (si utilisé)
+└── README.md
+
+**************************************************************************************
+
+BASE DES DONNEES : 
+CREATE DATABASE IF NOT EXISTS e_barber CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE e_barber;
+CREATE DATABASE IF NOT EXISTS e_barber CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE e_barber;
+
+-- Crée d'abord la table salons
+CREATE TABLE salons (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    location VARCHAR(255),
+    phone VARCHAR(20),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Ensuite crée la table users
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('client', 'salon_admin', 'super_admin') NOT NULL,
+    salon_id INT DEFAULT NULL, -- Lié si salon_admin
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE SET NULL
+);
+
+
+-- Horaires d’ouverture
+CREATE TABLE horaires (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    salon_id INT NOT NULL,
+    day_of_week ENUM('Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'),
+    open_time TIME,
+    close_time TIME,
+    FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE CASCADE
+);
+
+-- Tarifs & services proposés
+CREATE TABLE services (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    salon_id INT NOT NULL,
+    name VARCHAR(100),
+    price DECIMAL(10,2),
+    FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE CASCADE
+);
+
+-- Galerie photo du salon
+CREATE TABLE photos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    salon_id INT NOT NULL,
+    image_path VARCHAR(255),
+    FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE CASCADE
+);
+
+-- Rendez-vous (au salon ou à domicile)
+CREATE TABLE rdv (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    salon_id INT NOT NULL,
+    service_id INT NOT NULL,
+    date DATETIME NOT NULL,
+    is_domicile BOOLEAN DEFAULT FALSE,
+    status ENUM('en_attente', 'confirmé', 'annulé') DEFAULT 'en_attente',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE CASCADE,
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
+
+-- Favoris des utilisateurs
+CREATE TABLE favoris (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    salon_id INT NOT NULL,
+    UNIQUE (user_id, salon_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE CASCADE
+);
+
+-- Avis & notation
+CREATE TABLE avis (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    salon_id INT NOT NULL,
+    note INT CHECK (note BETWEEN 1 AND 5),
+    commentaire TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE CASCADE
+);
+
+***********************************************************************************
+
+INDEX.PHP :
+
+<?php
+session_start();
+
+require_once __DIR__ . '/../src/config/constants.php';
+require_once __DIR__ . '/../src/config/database.php';
+require_once __DIR__ . '/../src/core/Router.php';
+require_once __DIR__ . '/../src/helpers/Auth.php';
+
+spl_autoload_register(function ($class) {
+    $paths = [
+        __DIR__ . '/../src/controllers/' . $class . '.php',
+        __DIR__ . '/../src/models/' . $class . '.php',
+        __DIR__ . '/../src/core/' . $class . '.php'
+    ];
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            require_once $path;
+            return;
+        }
+    }
+});
+
+// Récupération de l'URL propre (ex: salon/show/5)
+$url = $_GET['url'] ?? '';
+$router = new Router($url);
+$router->dispatch();
+
+**************************************************************************************
+htaccess :
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+
+******************************************************************************************
+ROUTER.PHP : 
+<?php
+
+class Router
+{
+    protected $url;
+
+    public function __construct($url)
+    {
+        // Nettoyage de l'URL et découpage
+        $this->url = trim($url, '/');
+    }
+
+    public function dispatch()
+    {
+        $segments = explode('/', $this->url);
+
+        $controllerName = !empty($segments[0]) ? ucfirst($segments[0]) . 'Controller' : 'AuthController';
+        $methodName = $segments[1] ?? 'index';
+        $params = array_slice($segments, 2);
+
+        $controllerFile = __DIR__ . '/../controllers/' . $controllerName . '.php';
+
+        if (file_exists($controllerFile)) {
+            require_once $controllerFile;
+            if (class_exists($controllerName)) {
+                $controller = new $controllerName();
+                if (method_exists($controller, $methodName)) {
+                    call_user_func_array([$controller, $methodName], $params);
+                } else {
+                    $this->error("Méthode [$methodName] introuvable dans $controllerName");
+                }
+            } else {
+                $this->error("Contrôleur [$controllerName] inexistant");
+            }
+        } else {
+            $this->error("Fichier de contrôleur [$controllerName] manquant");
+        }
+    }
+
+    protected function error($message)
+    {
+        http_response_code(404);
+        echo "<h1>404 - Not Found</h1><p>$message</p>";
+        exit;
+    }
+}
+
+*******************************************************************************************
+AuthController.PHP : 
+<?php
+
+class AuthController
+{
+    public function index()
+    {
+        // Redirige vers le login si non connecté
+        if (isset($_SESSION['user']) && $_SESSION['user']['role'] === 'super_admin') {
+            header('Location: /admin/dashboard');
+            exit;
+        }
+        require_once __DIR__ . '/../views/auth/login.php';
+    }
+
+    public function login()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $email = $_POST['email'] ?? '';
+            $password = $_POST['password'] ?? '';
+
+            $pdo = require __DIR__ . '/../config/database.php';
+
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ? AND role = 'super_admin'");
+            $stmt->execute([$email]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user && password_verify($password, $user['password'])) {
+                $_SESSION['user'] = $user;
+                header('Location: /admin/dashboard');
+                exit;
+            } else {
+                $error = "Email ou mot de passe incorrect.";
+                require_once __DIR__ . '/../views/auth/login.php';
+            }
+        } else {
+            require_once __DIR__ . '/../views/auth/login.php';
+        }
+    }
+
+    public function logout()
+    {
+        session_destroy();
+        header('Location: /');
+        exit;
+    }
+}
+
+****************************************************************************************
+
+ADMINCONTROLLER.PHP :
+
+<?php
+
+class AdminController
+{
+    public function dashboard()
+    {
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'super_admin') {
+            header('Location: /auth');
+            exit;
+        }
+
+        // Exemple : on pourrait charger nombre de salons ou rdv ici
+        $pdo = require __DIR__ . '/../config/database.php';
+
+        $salons = $pdo->query("SELECT COUNT(*) FROM salons")->fetchColumn();
+        $clients = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'client'")->fetchColumn();
+
+        require_once __DIR__ . '/../views/admin/dashboard.php';
+    }
+}
+********************************************************************************************
+views/admin/dashboard.php :
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Super Admin</title>
+</head>
+<body>
+    <h1>Bienvenue, <?= htmlspecialchars($_SESSION['user']['name']) ?></h1>
+    <p><strong>Nombre de salons :</strong> <?= $salons ?></p>
+    <p><strong>Nombre de clients :</strong> <?= $clients ?></p>
+
+    <p><a href="/auth/logout">Se déconnecter</a></p>
+</body>
+</html>
+********************************************************************************************
