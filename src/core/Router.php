@@ -6,7 +6,6 @@ class Router
 
     public function __construct($url)
     {
-        // Nettoyage de l'URL et découpage
         $this->url = trim($url, '/');
     }
 
@@ -24,6 +23,12 @@ class Router
             require_once $controllerFile;
             if (class_exists($controllerName)) {
                 $controller = new $controllerName();
+
+                // Fallback DELETE via POST form (par exemple /salon/gallery/delete/12)
+                if ($_SERVER['REQUEST_METHOD'] === 'POST' && $methodName === 'delete' && isset($params[0])) {
+                    $methodName .= '';
+                }
+
                 if (method_exists($controller, $methodName)) {
                     call_user_func_array([$controller, $methodName], $params);
                 } else {

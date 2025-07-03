@@ -15,5 +15,7 @@
         <input type="password" name="password" required><br><br>
         <button type="submit">Se connecter</button>
     </form>
+    <p>Vous êtes un salon ? <a href="<?= ROOT_RELATIVE_PATH ?>/auth/registerSalon">Créer un compte</a></p>
+
 </body>
 </html>
