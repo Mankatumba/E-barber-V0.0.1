@@ -96,8 +96,7 @@ public function login()
     require_once __DIR__ . '/../../views/auth/login.php';
 }
 
-
- public function registerSalon()
+public function registerSalon()
 {
     $pdo = require __DIR__ . '/../config/database.php';
     $errors = [];
@@ -106,50 +105,30 @@ public function login()
         $name = trim($_POST['name'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
-        $location = trim($_POST['address'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
-        $description = trim($_POST['description'] ?? '');
         $category = $_POST['category'] ?? 'mixte';
-        $latitude = $_POST['latitude'] ?? null;
-        $longitude = $_POST['longitude'] ?? null;
 
-        // Validation simple
         if (!$name) $errors[] = "Le nom est requis";
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) $errors[] = "Email invalide";
         if (!$password) $errors[] = "Mot de passe requis";
 
-        // Upload photo de profil
-        $profilePhoto = null;
-        if (!empty($_FILES['profile_photo']['name'])) {
-            $filename = uniqid() . '_' . $_FILES['profile_photo']['name'];
-            $target = UPLOADS_PATH . '/' . $filename;
-
-            if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $target)) {
-                $profilePhoto = $filename;
-            } else {
-                $errors[] = "Erreur lors du téléversement de la photo.";
-            }
-        }
-
         if (empty($errors)) {
-            $stmt = $pdo->prepare("INSERT INTO salons 
-                (name, location, phone, created_at, status, profile_picture, description, category, latitude, longitude, email, password) 
-                VALUES (?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)");
-
-            $stmt->execute([
-                $name, $location, $phone, 'active',
-                $profilePhoto, $description, $category,
-                $latitude, $longitude, $email, $password
-            ]);
-
-            header('Location: ' . ROOT_RELATIVE_PATH . '/auth?registered=1');
-            exit;
+            try {
+                $stmt = $pdo->prepare("INSERT INTO salons (name, email, password, category, created_at) VALUES (?, ?, ?, ?, NOW())");
+                $stmt->execute([$name, $email, $password, $category]);
+                header('Location: ' . ROOT_RELATIVE_PATH . '/auth?registered=1');
+                exit;
+            } catch (PDOException $e) {
+                if ($e->errorInfo[1] == 1062) {
+                    $errors[] = "Cet email est déjà utilisé.";
+                } else {
+                    throw $e;
+                }
+            }
         }
     }
 
     require_once __DIR__ . '/../../views/auth/register_salon.php';
 }
-
 
     public function logout()
     {

@@ -30,60 +30,77 @@ class SalonController
         require_once __DIR__ . '/../../views/salon/dashboard.php';
     }
 
-    public function editProfile()
-    {
-        $this->checkSalon();
-        $pdo = require __DIR__ . '/../config/database.php';
-        $salonId = $_SESSION['user']['id'];
-        $errors = [];
+    public function edit_profile()
+{
+    $this->checkSalon();
+    $pdo = require __DIR__ . '/../config/database.php';
+    $salonId = $_SESSION['user']['id'];
+    $errors = [];
 
-        $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
-        $stmt->execute([$salonId]);
-        $salon = $stmt->fetch();
+    // Récupérer les infos actuelles
+    $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
+    $stmt->execute([$salonId]);
+    $salon = $stmt->fetch();
 
-        if (!$salon) {
+    if (!$salon) {
+        header('Location: ' . ROOT_RELATIVE_PATH . '/salon/dashboard');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $name = trim($_POST['name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $category = trim($_POST['category'] ?? '');
+        $contactPhone = trim($_POST['contact_phone'] ?? '');
+        $whatsapp = trim($_POST['whatsapp'] ?? '');
+        $latitude = trim($_POST['latitude'] ?? '');
+        $longitude = trim($_POST['longitude'] ?? '');
+
+        // Photo de profil
+        $profilePicture = $salon['profile_picture'] ?? null;
+        if (!empty($_FILES['profile_picture']['name'])) {
+            $filename = uniqid() . '_' . $_FILES['profile_picture']['name'];
+            $target = UPLOADS_PATH . '/' . $filename;
+
+            if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $target)) {
+                $profilePicture = $filename;
+            } else {
+                $errors[] = "Erreur lors de l'upload de la photo.";
+            }
+        }
+
+        if (empty($errors)) {
+            $stmt = $pdo->prepare("UPDATE salons SET 
+                name = ?, 
+                description = ?, 
+                category = ?, 
+                contact_phone = ?, 
+                whatsapp = ?, 
+                latitude = ?, 
+                longitude = ?, 
+                profile_picture = ?
+                WHERE id = ?");
+
+            $stmt->execute([
+                $name,
+                $description,
+                $category,
+                $contactPhone,
+                $whatsapp,
+                $latitude,
+                $longitude,
+                $profilePicture,
+                $salonId
+            ]);
+
+            $_SESSION['success'] = "Profil mis à jour avec succès.";
             header('Location: ' . ROOT_RELATIVE_PATH . '/salon/dashboard');
             exit;
         }
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $name = trim($_POST['name'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $category = trim($_POST['category'] ?? '');
-            $address = trim($_POST['address'] ?? '');
-            $latitude = trim($_POST['latitude'] ?? '');
-            $longitude = trim($_POST['longitude'] ?? '');
-
-            // Photo de profil
-            if (!empty($_FILES['profile_photo']['name'])) {
-                $profilePhotoName = uniqid() . '_' . $_FILES['profile_photo']['name'];
-                $targetPath = UPLOADS_PATH . '/' . $profilePhotoName;
-
-                if (move_uploaded_file($_FILES['profile_photo']['tmp_name'], $targetPath)) {
-                    $salon['profile_photo'] = $profilePhotoName;
-                } else {
-                    $errors[] = "Erreur lors de l'upload de la photo.";
-                }
-            }
-
-            if (empty($errors)) {
-                $stmt = $pdo->prepare("UPDATE salons SET name = ?, description = ?, category = ?, address = ?, latitude = ?, longitude = ?, profile_photo = ? WHERE id = ?");
-                $stmt->execute([
-                    $name,
-                    $description,
-                    $category,
-                    $address,
-                    $latitude,
-                    $longitude,
-                    $salon['profile_photo'] ?? null,
-                    $salonId
-                ]);
-
-                header('Location: ' . ROOT_RELATIVE_PATH . '/salon/dashboard');
-                exit;
-            }
-        }
-
-        require_once __DIR__ . '/../../views/salon/edit_profile.php';
     }
+
+    require_once __DIR__ . '/../../views/salon/edit_profile.php';
+}
+
+
 }
