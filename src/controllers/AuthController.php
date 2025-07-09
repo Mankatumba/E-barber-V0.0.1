@@ -33,6 +33,43 @@ class AuthController
        require_once dirname(__DIR__, 2) . '/views/auth/login.php';
 
     }
+
+public function registerClient()
+{
+    $pdo = require __DIR__ . '/../config/database.php';
+    $errors = [];
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $name = trim($_POST['name']);
+        $email = trim($_POST['email']);
+        $password = trim($_POST['password']);
+
+        if (!$name || !$email || !$password) {
+            $errors[] = "Tous les champs sont obligatoires.";
+        }
+
+        // Vérifier si l'email est déjà utilisé
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->execute([$email]);
+        if ($stmt->fetch()) {
+            $errors[] = "Cet email est déjà utilisé.";
+        }
+
+        if (empty($errors)) {
+            // Enregistrer le client avec mot de passe en clair comme tu l’utilises
+            $stmt = $pdo->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'client')");
+            $stmt->execute([$name, $email, $password]);
+
+            $_SESSION['success'] = "Compte client créé avec succès. Vous pouvez vous connecter.";
+            header('Location: ' . ROOT_RELATIVE_PATH . '/auth');
+            exit;
+        }
+    }
+
+    require_once __DIR__ . '/../../views/auth/register_client.php';
+}
+
+
 public function login()
 {
     $pdo = require __DIR__ . '/../config/database.php';

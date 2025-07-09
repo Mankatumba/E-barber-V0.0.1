@@ -41,6 +41,7 @@
     </ul>
 <?php endif; ?>
 
+
 <h3>Services</h3>
 <?php if (empty($services)): ?>
     <p>Aucun service enregistré.</p>
@@ -52,8 +53,11 @@
     </ul>
 <?php endif; ?>
 
+
+
 <hr>
 <p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/edit_profile">Modifier mon profil</a></p>
+<a href="<?= ROOT_RELATIVE_PATH ?>/salon/services">Gérer mes services</a>
 <p><a href="<?= ROOT_RELATIVE_PATH ?>/auth/logout">Se déconnecter</a></p>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

@@ -16,6 +16,7 @@
         <button type="submit">Se connecter</button>
     </form>
     <p>Vous êtes un salon ? <a href="<?= ROOT_RELATIVE_PATH ?>/auth/registerSalon">Créer un compte</a></p>
+    <p>Vous êtes un nouveau client ? <a href="<?= ROOT_RELATIVE_PATH ?>/auth/registerClient">Créer un compte</a></p>
 
 </body>
 </html>
