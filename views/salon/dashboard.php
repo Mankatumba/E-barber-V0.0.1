@@ -21,11 +21,12 @@
 </div>
 
 <hr>
+
 <h3>Statistiques</h3>
 <ul>
-    <li><strong>Nombre de clients abonnés :</strong> <?= isset($nbFavoris) ? $nbFavoris : '0' ?></li>
-    <li><strong>Nombre de réservations :</strong> <?= isset($nbRdv) ? $nbRdv : '0' ?></li>
-    <li><strong>Moyenne des avis :</strong> <?= isset($avgAvis) ? number_format($avgAvis, 1) : '0.0' ?>/5</li>
+    <li><strong>Nombre de clients abonnés :</strong> <?= $nbFavoris ?? '0' ?></li>
+    <li><strong>Nombre de réservations :</strong> <?= $nbRdv ?? '0' ?></li>
+    <li><strong>Moyenne des avis :</strong> <?= number_format($avgAvis ?? 0, 1) ?>/5</li>
 </ul>
 
 <hr>
@@ -36,11 +37,12 @@
 <?php else: ?>
     <ul>
         <?php foreach ($horaires as $h): ?>
-            <li><?= htmlspecialchars($h['jour']) ?> : <?= htmlspecialchars($h['heure_ouverture']) ?> - <?= htmlspecialchars($h['heure_fermeture']) ?></li>
+            <li><?= htmlspecialchars($h['jour']) ?> : <?= htmlspecialchars($h['heure_debut']) ?> - <?= htmlspecialchars($h['heure_fin']) ?></li>
         <?php endforeach; ?>
     </ul>
 <?php endif; ?>
 
+<hr>
 
 <h3>Services</h3>
 <?php if (empty($services)): ?>
@@ -48,16 +50,29 @@
 <?php else: ?>
     <ul>
         <?php foreach ($services as $s): ?>
-            <li><?= htmlspecialchars($s['nom']) ?> - <?= htmlspecialchars($s['prix']) ?> FCFA</li>
+            <li><?= htmlspecialchars($s['name']) ?> — <?= htmlspecialchars($s['price']) ?> $ (<?= $s['duration'] ?> min)</li>
         <?php endforeach; ?>
     </ul>
 <?php endif; ?>
 
+<hr>
 
+<h3>Galerie de photos</h3>
+<?php if (empty($images)): ?>
+    <p>Aucune image publiée.</p>
+<?php else: ?>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <?php foreach ($images as $img): ?>
+            <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($img['image_path']) ?>" alt="Photo" width="120" style="border-radius: 8px;">
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+<p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/gallery">Gérer la galerie</a></p>
 
 <hr>
-<p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/edit_profile">Modifier mon profil</a></p>
-<a href="<?= ROOT_RELATIVE_PATH ?>/salon/services">Gérer mes services</a>
-<p><a href="<?= ROOT_RELATIVE_PATH ?>/auth/logout">Se déconnecter</a></p>
+
+<p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/edit_profile"> Modifier mon profil</a></p>
+<p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/services">Gérer mes services</a></p>
+<p><a href="<?= ROOT_RELATIVE_PATH ?>/auth/logout"> Se déconnecter</a></p>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

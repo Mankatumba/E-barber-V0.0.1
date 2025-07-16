@@ -16,170 +16,218 @@ class SalonController
             exit;
         }
     }
-public function dashboard()
-{
-    $this->checkSalon();
-    $pdo = require __DIR__ . '/../config/database.php';
-    $salonId = $_SESSION['user']['id'];
 
-    // Salon
-    $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
-    $stmt->execute([$salonId]);
-    $salon = $stmt->fetch();
+    public function dashboard()
+    {
+        $this->checkSalon();
+        $pdo = require __DIR__ . '/../config/database.php';
+        $salonId = $_SESSION['user']['id'];
 
-    // Statistiques
-    $nbFavoris = $pdo->prepare("SELECT COUNT(*) FROM favoris WHERE salon_id = ?");
-    $nbFavoris->execute([$salonId]);
-    $nbFavoris = $nbFavoris->fetchColumn();
+        // Salon
+        $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
+        $stmt->execute([$salonId]);
+        $salon = $stmt->fetch();
 
-    $nbRdv = $pdo->prepare("SELECT COUNT(*) FROM rdv WHERE salon_id = ?");
-    $nbRdv->execute([$salonId]);
-    $nbRdv = $nbRdv->fetchColumn();
+        // Statistiques
+        $nbFavoris = $pdo->prepare("SELECT COUNT(*) FROM favoris WHERE salon_id = ?");
+        $nbFavoris->execute([$salonId]);
+        $nbFavoris = $nbFavoris->fetchColumn();
 
-    $avgAvis = $pdo->prepare("SELECT AVG(note) FROM avis WHERE salon_id = ?");
-    $avgAvis->execute([$salonId]);
-    $avgAvis = $avgAvis->fetchColumn() ?: 0;
+        $nbRdv = $pdo->prepare("SELECT COUNT(*) FROM rdv WHERE salon_id = ?");
+        $nbRdv->execute([$salonId]);
+        $nbRdv = $nbRdv->fetchColumn();
 
-    // Services
-    $stmt = $pdo->prepare("SELECT * FROM services WHERE salon_id = ?");
-    $stmt->execute([$salonId]);
-    $services = $stmt->fetchAll();
+        $avgAvis = $pdo->prepare("SELECT AVG(note) FROM avis WHERE salon_id = ?");
+        $avgAvis->execute([$salonId]);
+        $avgAvis = $avgAvis->fetchColumn() ?: 0;
 
-    // Horaires par service
-    $horaires = [];
-    foreach ($services as $s) {
-        $stmt = $pdo->prepare("SELECT * FROM horaires WHERE service_id = ?");
-        $stmt->execute([$s['id']]);
-        $horaires[$s['id']] = $stmt->fetchAll();
+        // Services
+        $stmt = $pdo->prepare("SELECT * FROM services WHERE salon_id = ?");
+        $stmt->execute([$salonId]);
+        $services = $stmt->fetchAll();
+
+        // Horaires d'ouverture
+        $stmt = $pdo->prepare("SELECT * FROM horaires_ouverture WHERE salon_id = ?");
+        $stmt->execute([$salonId]);
+        $horaires = $stmt->fetchAll();
+
+        // Galerie
+        $stmt = $pdo->prepare("SELECT * FROM galerie WHERE salon_id = ?");
+        $stmt->execute([$salonId]);
+        $galerie = $stmt->fetchAll();
+
+        // Avis
+        $stmt = $pdo->prepare("SELECT a.*, u.name AS client FROM avis a JOIN users u ON a.user_id = u.id WHERE a.salon_id = ? ORDER BY a.id DESC");
+        $stmt->execute([$salonId]);
+        $avis = $stmt->fetchAll();
+
+        require_once __DIR__ . '/../../views/salon/dashboard.php';
     }
 
-    require_once __DIR__ . '/../../views/salon/dashboard.php';
-}
-
-public function horaires($serviceId)
-{
-    $this->checkSalon();
-    $pdo = require __DIR__ . '/../config/database.php';
-    $errors = [];
-
-    // Vérifie que le service appartient au salon connecté
-    $stmt = $pdo->prepare("SELECT * FROM services WHERE id = ? AND salon_id = ?");
-    $stmt->execute([$serviceId, $_SESSION['user']['id']]);
-    $service = $stmt->fetch();
-
-    if (!$service) {
-        header('Location: ' . ROOT_RELATIVE_PATH . '/salon/services');
-        exit;
-    }
-
-    // Si formulaire soumis
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $jours = $_POST['jour'] ?? [];
-        $heuresDebut = $_POST['heure_debut'] ?? [];
-        $heuresFin = $_POST['heure_fin'] ?? [];
-
-        // Supprimer les anciens horaires
-        $pdo->prepare("DELETE FROM horaires WHERE service_id = ?")->execute([$serviceId]);
-
-        // Ajouter les nouveaux
-        for ($i = 0; $i < count($jours); $i++) {
-            $jour = trim($jours[$i]);
-            $debut = trim($heuresDebut[$i]);
-            $fin = trim($heuresFin[$i]);
-
-            if ($jour && $debut && $fin) {
-                $stmt = $pdo->prepare("INSERT INTO horaires (service_id, jour, heure_debut, heure_fin) VALUES (?, ?, ?, ?)");
-                $stmt->execute([$serviceId, $jour, $debut, $fin]);
-            }
-        }
-
-        $_SESSION['success'] = "Horaires mis à jour.";
-        header('Location: ' . ROOT_RELATIVE_PATH . '/salon/services');
-        exit;
-    }
-
-    // Horaires actuels
-    $stmt = $pdo->prepare("SELECT * FROM horaires WHERE service_id = ?");
-    $stmt->execute([$serviceId]);
-    $horaires = $stmt->fetchAll();
-
-    require_once __DIR__ . '/../../views/salon/horaires.php';
-}
-
-
-    public function edit_profile()
+    public function horaires()
     {
         $this->checkSalon();
         $pdo = require __DIR__ . '/../config/database.php';
         $salonId = $_SESSION['user']['id'];
         $errors = [];
 
-        // Récupérer les infos actuelles
-        $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
-        $stmt->execute([$salonId]);
-        $salon = $stmt->fetch();
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $jours = $_POST['jour'] ?? [];
+            $heuresDebut = $_POST['heure_debut'] ?? [];
+            $heuresFin = $_POST['heure_fin'] ?? [];
 
-        if (!$salon) {
+            $pdo->prepare("DELETE FROM horaires_ouverture WHERE salon_id = ?")->execute([$salonId]);
+
+            for ($i = 0; $i < count($jours); $i++) {
+                $jour = trim($jours[$i]);
+                $debut = trim($heuresDebut[$i]);
+                $fin = trim($heuresFin[$i]);
+
+                if ($jour && $debut && $fin) {
+                    $stmt = $pdo->prepare("INSERT INTO horaires_ouverture (salon_id, jour, heure_debut, heure_fin) VALUES (?, ?, ?, ?)");
+                    $stmt->execute([$salonId, $jour, $debut, $fin]);
+                }
+            }
+
+            $_SESSION['success'] = "Horaires mis à jour.";
             header('Location: ' . ROOT_RELATIVE_PATH . '/salon/dashboard');
             exit;
         }
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $name = trim($_POST['name'] ?? '');
-            $description = trim($_POST['description'] ?? '');
-            $category = trim($_POST['category'] ?? '');
-            $contactPhone = trim($_POST['contact_phone'] ?? '');
-            $whatsapp = trim($_POST['whatsapp'] ?? '');
-            $latitude = trim($_POST['latitude'] ?? '');
-            $longitude = trim($_POST['longitude'] ?? '');
+        $stmt = $pdo->prepare("SELECT * FROM horaires_ouverture WHERE salon_id = ?");
+        $stmt->execute([$salonId]);
+        $horaires = $stmt->fetchAll();
 
-            // Photo de profil
-            $profilePicture = $salon['profile_picture'] ?? null;
-            if (!empty($_FILES['profile_picture']['name'])) {
-                $filename = uniqid() . '_' . $_FILES['profile_picture']['name'];
-                $target = UPLOADS_PATH . '/' . $filename;
+        require_once __DIR__ . '/../../views/salon/horaires.php';
+    }
+public function gallery()
+{
+    $this->checkSalon();
+    $pdo = require __DIR__ . '/../config/database.php';
+    $salonId = $_SESSION['user']['id'];
 
-                if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $target)) {
-                    $profilePicture = $filename;
-                } else {
-                    $errors[] = "Erreur lors de l'upload de la photo.";
-                }
+    $stmt = $pdo->prepare("SELECT * FROM galerie WHERE salon_id = ?");
+    $stmt->execute([$salonId]);
+    $images = $stmt->fetchAll();
+
+    require_once __DIR__ . '/../../views/salon/gallery.php';
+}
+
+public function uploadImage()
+{
+    $this->checkSalon();
+    $pdo = require __DIR__ . '/../config/database.php';
+    $salonId = $_SESSION['user']['id'];
+
+    if (!empty($_FILES['images']['name'][0])) {
+        foreach ($_FILES['images']['tmp_name'] as $index => $tmpPath) {
+            $originalName = $_FILES['images']['name'][$index];
+            $filename = uniqid() . '_' . $originalName;
+            $target = UPLOADS_PATH . '/' . $filename;
+
+            if (move_uploaded_file($tmpPath, $target)) {
+                $stmt = $pdo->prepare("INSERT INTO galerie (salon_id, image_path) VALUES (?, ?)");
+                $stmt->execute([$salonId, $filename]);
             }
+        }
+    }
 
-            if (empty($errors)) {
-                $stmt = $pdo->prepare("UPDATE salons SET 
-                    name = ?, 
-                    description = ?, 
-                    category = ?, 
-                    contact_phone = ?, 
-                    whatsapp = ?, 
-                    latitude = ?, 
-                    longitude = ?, 
-                    profile_picture = ?
-                    WHERE id = ?");
+    $_SESSION['success'] = "Images uploadées.";
+    header('Location: ' . ROOT_RELATIVE_PATH . '/salon/gallery');
+    exit;
+}
 
-                $stmt->execute([
-                    $name,
-                    $description,
-                    $category,
-                    $contactPhone,
-                    $whatsapp,
-                    $latitude,
-                    $longitude,
-                    $profilePicture,
-                    $salonId
-                ]);
+public function deleteImage($id)
+{
+    $this->checkSalon();
+    $pdo = require __DIR__ . '/../config/database.php';
+    $salonId = $_SESSION['user']['id'];
 
-                $_SESSION['success'] = "Profil mis à jour avec succès.";
-                header('Location: ' . ROOT_RELATIVE_PATH . '/salon/dashboard');
-                exit;
+    $stmt = $pdo->prepare("SELECT * FROM galerie WHERE id = ? AND salon_id = ?");
+    $stmt->execute([$id, $salonId]);
+    $image = $stmt->fetch();
+
+    if ($image) {
+        $path = UPLOADS_PATH . '/' . $image['image_path'];
+        if (file_exists($path)) {
+            unlink($path);
+        }
+
+        $stmt = $pdo->prepare("DELETE FROM galerie WHERE id = ? AND salon_id = ?");
+        $stmt->execute([$id, $salonId]);
+    }
+
+    $_SESSION['success'] = "Image supprimée.";
+    header('Location: ' . ROOT_RELATIVE_PATH . '/salon/gallery');
+    exit;
+}
+
+    public function edit_profile()
+{
+    $this->checkSalon();
+    $pdo = require __DIR__ . '/../config/database.php';
+    $salonId = $_SESSION['user']['id'];
+    $errors = [];
+
+    // Récupérer les infos actuelles
+    $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
+    $stmt->execute([$salonId]);
+    $salon = $stmt->fetch();
+
+    if (!$salon) {
+        header('Location: ' . ROOT_RELATIVE_PATH . '/salon/dashboard');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $name = trim($_POST['name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $category = trim($_POST['category'] ?? '');
+        $contactPhone = trim($_POST['contact_phone'] ?? '');
+        $whatsapp = trim($_POST['whatsapp'] ?? '');
+        $latitude = trim($_POST['latitude'] ?? '');
+        $longitude = trim($_POST['longitude'] ?? '');
+
+        // Photo de profil
+        $profilePicture = $salon['profile_picture'] ?? null;
+        if (!empty($_FILES['profile_picture']['name'])) {
+            $filename = uniqid() . '_' . $_FILES['profile_picture']['name'];
+            $target = UPLOADS_PATH . '/' . $filename;
+
+            if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $target)) {
+                $profilePicture = $filename;
+            } else {
+                $errors[] = "Erreur lors de l'upload de la photo.";
             }
         }
 
-        require_once __DIR__ . '/../../views/salon/edit_profile.php';
+        if (empty($errors)) {
+            $stmt = $pdo->prepare("UPDATE salons SET 
+                name = ?, 
+                description = ?, 
+                category = ?, 
+                contact_phone = ?, 
+                whatsapp = ?, 
+                latitude = ?, 
+                longitude = ?, 
+                profile_picture = ?
+                WHERE id = ?");
+
+            $stmt->execute([
+                $name, $description, $category, $contactPhone,
+                $whatsapp, $latitude, $longitude, $profilePicture, $salonId
+            ]);
+
+            $_SESSION['success'] = "Profil mis à jour.";
+            header('Location: ' . ROOT_RELATIVE_PATH . '/salon/dashboard');
+            exit;
+        }
     }
 
-    public function services()
+    require_once __DIR__ . '/../../views/salon/edit_profile.php';
+}
+
+public function services()
 {
     $this->checkSalon();
     $pdo = require __DIR__ . '/../config/database.php';
@@ -206,98 +254,13 @@ public function horaires($serviceId)
         }
     }
 
-    // Ajouter un horaire à un service
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'add_horaire') {
-        $serviceId = intval($_POST['service_id']);
-        $jour = $_POST['jour'];
-        $heureDebut = $_POST['heure_debut'];
-        $heureFin = $_POST['heure_fin'];
-
-        $stmt = $pdo->prepare("INSERT INTO horaires (service_id, jour, heure_debut, heure_fin) VALUES (?, ?, ?, ?)");
-        $stmt->execute([$serviceId, $jour, $heureDebut, $heureFin]);
-
-        $_SESSION['success'] = "Horaire ajouté.";
-        header('Location: ' . ROOT_RELATIVE_PATH . '/salon/services');
-        exit;
-    }
-
-    // Supprimer un horaire
-    if (isset($_GET['delete_horaire'])) {
-        $horaireId = intval($_GET['delete_horaire']);
-        $stmt = $pdo->prepare("DELETE FROM horaires WHERE id = ? AND service_id IN (SELECT id FROM services WHERE salon_id = ?)");
-        $stmt->execute([$horaireId, $salonId]);
-
-        $_SESSION['success'] = "Horaire supprimé.";
-        header('Location: ' . ROOT_RELATIVE_PATH . '/salon/services');
-        exit;
-    }
-
-    // Services et horaires
+    // Liste des services
     $stmt = $pdo->prepare("SELECT * FROM services WHERE salon_id = ?");
     $stmt->execute([$salonId]);
     $services = $stmt->fetchAll();
 
-    $horaires = [];
-    foreach ($services as $s) {
-        $stmt = $pdo->prepare("SELECT * FROM horaires WHERE service_id = ?");
-        $stmt->execute([$s['id']]);
-        $horaires[$s['id']] = $stmt->fetchAll();
-    }
-
     require_once __DIR__ . '/../../views/salon/services.php';
 }
 
-    public function deleteService($id)
-    {
-        $this->checkSalon();
-        $pdo = require __DIR__ . '/../config/database.php';
-        $salonId = $_SESSION['user']['id'];
 
-        $stmt = $pdo->prepare("DELETE FROM services WHERE id = ? AND salon_id = ?");
-        $stmt->execute([$id, $salonId]);
-
-        $_SESSION['success'] = "Service supprimé.";
-        header('Location: ' . ROOT_RELATIVE_PATH . '/salon/services');
-        exit;
-    }
-
-    public function editService($id)
-    {
-        $this->checkSalon();
-        $pdo = require __DIR__ . '/../config/database.php';
-        $salonId = $_SESSION['user']['id'];
-        $errors = [];
-
-        $stmt = $pdo->prepare("SELECT * FROM services WHERE id = ? AND salon_id = ?");
-        $stmt->execute([$id, $salonId]);
-        $service = $stmt->fetch();
-
-        if (!$service) {
-            $_SESSION['error'] = "Service introuvable.";
-            header('Location: ' . ROOT_RELATIVE_PATH . '/salon/services');
-            exit;
-        }
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $name = trim($_POST['name'] ?? '');
-            $price = floatval($_POST['price'] ?? 0);
-            $duration = intval($_POST['duration'] ?? 0);
-            $description = trim($_POST['description'] ?? '');
-
-            if (!$name || $price <= 0) {
-                $errors[] = "Nom et prix requis.";
-            }
-
-            if (empty($errors)) {
-                $stmt = $pdo->prepare("UPDATE services SET name = ?, price = ?, duration = ?, description = ? WHERE id = ? AND salon_id = ?");
-                $stmt->execute([$name, $price, $duration, $description, $id, $salonId]);
-
-                $_SESSION['success'] = "Service modifié avec succès.";
-                header('Location: ' . ROOT_RELATIVE_PATH . '/salon/services');
-                exit;
-            }
-        }
-
-        require_once __DIR__ . '/../../views/salon/services.php';
-    }
 }

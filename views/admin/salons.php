@@ -12,15 +12,16 @@ require_once __DIR__ . '/../layouts/menu.php';
             <th>Email</th>
             <th>Téléphone</th>
             <th>Actions</th>
+            <th>Statut</th>
         </tr>
         <?php foreach ($salons as $salon) : ?>
             <tr>
-                <td><?= htmlspecialchars($salon['nom']) ?></td>
+                <td><?= htmlspecialchars($salon['name']) ?></td>
                 <td><?= htmlspecialchars($salon['adresse']) ?></td>
                 <td><?= htmlspecialchars($salon['email']) ?></td>
-                <td><?= htmlspecialchars($salon['telephone']) ?></td>
+                <td><?= isset($client['telephone']) ? htmlspecialchars($client['telephone']) : 'Non renseigné' ?>
+</td>
                 <td>
-                    <a href="<?= ROOT_RELATIVE_PATH ?>/admin/createSalon">Ajouter un salon</a>
                     <a href="<?= ROOT_RELATIVE_PATH ?>/admin/editSalon/<?= $salon['id'] ?>">Modifier</a>
                      <?php if ($salon['status'] === 'blocked'): ?>
                     <a href="<?= ROOT_RELATIVE_PATH ?>/admin/unblock_salon/<?= $salon['id'] ?>">Débloquer</a>

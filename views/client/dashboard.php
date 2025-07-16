@@ -59,8 +59,9 @@
     </ul>
 <?php endif; ?>
 
-<h3>Salons disponibles</h3>
+<hr>
 
+<h3>Salons disponibles</h3>
 <div style="display: flex; flex-wrap: wrap; gap: 20px;">
     <?php foreach ($salons as $salon): ?>
         <div style="border: 1px solid #ccc; padding: 15px; width: 250px;">
@@ -76,6 +77,5 @@
         </div>
     <?php endforeach; ?>
 </div>
-
 
 <?php require_once dirname(__DIR__) . '../layouts/footer.php'; ?>

@@ -124,6 +124,68 @@ class ClientController
 
     require_once __DIR__ . '/../../views/client/salon_view.php';
 }
+public function addFavori()
+{
+    session_start();
+    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'client') {
+        header('Location: ' . ROOT_RELATIVE_PATH . '/auth');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['salon_id'])) {
+        $pdo = require __DIR__ . '/../config/database.php';
+        $clientId = $_SESSION['user']['id'];
+        $salonId = intval($_POST['salon_id']);
+
+        // Vérifie si le favori existe déjà
+        $stmt = $pdo->prepare("SELECT * FROM favoris WHERE client_id = ? AND salon_id = ?");
+        $stmt->execute([$clientId, $salonId]);
+        if (!$stmt->fetch()) {
+            $stmt = $pdo->prepare("INSERT INTO favoris (client_id, salon_id) VALUES (?, ?)");
+            $stmt->execute([$clientId, $salonId]);
+        }
+
+        $_SESSION['success'] = "Salon ajouté à vos favoris.";
+        header('Location: ' . ROOT_RELATIVE_PATH . '/client/dashboard');
+        exit;
+    }
+
+    http_response_code(400);
+    echo "Requête invalide.";
+}
+public function addAvis()
+{
+    session_start();
+    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'client') {
+        header('Location: ' . ROOT_RELATIVE_PATH . '/auth');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $pdo = require __DIR__ . '/../config/database.php';
+        $clientId = $_SESSION['user']['id'];
+        $salonId = intval($_POST['salon_id']);
+        $note = intval($_POST['note']);
+        $commentaire = trim($_POST['commentaire']);
+
+        // Optionnel : vérifier qu’un avis pour ce salon n’existe pas déjà
+        $stmt = $pdo->prepare("SELECT * FROM avis WHERE user_id = ? AND salon_id = ?");
+        $stmt->execute([$clientId, $salonId]);
+        if ($stmt->fetch()) {
+            $_SESSION['success'] = "Vous avez déjà laissé un avis pour ce salon.";
+        } else {
+            $stmt = $pdo->prepare("INSERT INTO avis (user_id, salon_id, note, commentaire, created_at) VALUES (?, ?, ?, ?, NOW())");
+            $stmt->execute([$clientId, $salonId, $note, $commentaire]);
+            $_SESSION['success'] = "Avis publié avec succès.";
+        }
+
+        header('Location: ' . ROOT_RELATIVE_PATH . '/client/salon/' . $salonId);
+        exit;
+    }
+
+    http_response_code(400);
+    echo "Requête invalide.";
+}
 
 
 }

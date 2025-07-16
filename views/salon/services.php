@@ -87,4 +87,6 @@
     </div>
 <?php endforeach; ?>
 
+<p style="margin-top: 20px;"><a href="<?= ROOT_RELATIVE_PATH ?>/salon/dashboard"> Retour au tableau de bord</a></p>
+
 <?php require_once dirname(__DIR__) . '../layouts/footer.php'; ?>

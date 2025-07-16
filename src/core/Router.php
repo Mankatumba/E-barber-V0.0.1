@@ -21,12 +21,21 @@ class Router
 
         if (file_exists($controllerFile)) {
             require_once $controllerFile;
+
             if (class_exists($controllerName)) {
                 $controller = new $controllerName();
 
-                // Fallback DELETE via POST form (par exemple /salon/gallery/delete/12)
-                if ($_SERVER['REQUEST_METHOD'] === 'POST' && $methodName === 'delete' && isset($params[0])) {
-                    $methodName .= '';
+                // Traitement spécial pour les URLs complexes de gallery
+                if ($controllerName === 'SalonController') {
+                    if ($methodName === 'gallery') {
+                        if (isset($params[0]) && $params[0] === 'upload') {
+                            $methodName = 'uploadImage';
+                            $params = [];
+                        } elseif (isset($params[0]) && $params[0] === 'delete' && isset($params[1])) {
+                            $methodName = 'deleteImage';
+                            $params = [$params[1]];
+                        }
+                    }
                 }
 
                 if (method_exists($controller, $methodName)) {

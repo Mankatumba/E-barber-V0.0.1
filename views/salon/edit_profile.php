@@ -46,27 +46,6 @@
 
 <p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/dashboard">Annuler</a></p>
 
-<!-- Leaflet.js + carte OpenStreetMap (gratuite) -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-    const lat = parseFloat(document.getElementById('latitude').value) || -4.325; // Kinshasa par défaut
-    const lng = parseFloat(document.getElementById('longitude').value) || 15.322;
-
-    const map = L.map('map').setView([lat, lng], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-    }).addTo(map);
-
-    const marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-
-    marker.on('dragend', function (e) {
-        const position = marker.getLatLng();
-        document.getElementById('latitude').value = position.lat;
-        document.getElementById('longitude').value = position.lng;
-    });
-</script>
+<p style="margin-top: 20px;"><a href="<?= ROOT_RELATIVE_PATH ?>/salon/dashboard"> Retour au tableau de bord</a></p>
 
 <?php require_once dirname(__DIR__) . '../layouts/footer.php'; ?>
