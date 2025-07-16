@@ -30,7 +30,7 @@ class ClientController
 
         // Salons favoris
             $clientId = $_SESSION['user']['id'];
-        $stmt = $pdo->prepare("SELECT s.* FROM favoris f JOIN salons s ON f.salon_id = s.id WHERE f.client_id = ?");
+        $stmt = $pdo->prepare("SELECT s.* FROM favoris f JOIN salons s ON f.salon_id = s.id WHERE f.user_id = ?");
         $stmt->execute([$clientId]);
         $favoris = $stmt->fetchAll();
 

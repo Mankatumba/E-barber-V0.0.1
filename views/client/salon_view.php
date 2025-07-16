@@ -1,96 +1,116 @@
-<?php require_once dirname(__DIR__) . '/layouts/header.php'; ?>
+<?php ob_start(); ?>
 
-<h2><?= htmlspecialchars($salon['name']) ?> (<?= ucfirst($salon['category']) ?>)</h2>
+<div class="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 mt-6">
 
-<?php if (!empty($salon['profile_picture'])): ?>
-    <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($salon['profile_picture']) ?>" alt="photo" style="max-width: 300px;"><br><br>
-<?php endif; ?>
+    <h2 class="text-2xl font-bold mb-4 text-indigo-600"><?= htmlspecialchars($salon['name']) ?> <span class="text-sm text-gray-500">(<?= ucfirst($salon['category']) ?>)</span></h2>
 
-<p><?= nl2br(htmlspecialchars($salon['description'])) ?></p>
-<p><strong>WhatsApp :</strong> <?= htmlspecialchars($salon['whatsapp']) ?></p>
-<p><strong>Téléphone :</strong> <?= htmlspecialchars($salon['phone']) ?></p>
-<p><strong>Localisation :</strong> Latitude <?= htmlspecialchars($salon['latitude']) ?> / Longitude <?= htmlspecialchars($salon['longitude']) ?></p>
+    <?php if (!empty($salon['profile_picture'])): ?>
+        <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($salon['profile_picture']) ?>" alt="photo"
+             class="w-full max-w-md rounded-lg shadow mb-4">
+    <?php endif; ?>
 
-<!-- Ajouter aux favoris -->
-<form method="POST" action="<?= ROOT_RELATIVE_PATH ?>/client/addFavori">
+    <p class="mb-3 text-gray-700 whitespace-pre-line"><?= nl2br(htmlspecialchars($salon['description'])) ?></p>
 
-    <input type="hidden" name="salon_id" value="<?= $salon['id'] ?>">
-    <button type="submit">💖 Ajouter aux favoris</button>
-</form>
-
-<hr>
-
-<!-- Galerie -->
-<h3>Galerie</h3>
-<?php if (empty($images)): ?>
-    <p>Aucune image publiée.</p>
-<?php else: ?>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-        <?php foreach ($images as $img): ?>
-            <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($img['image_path']) ?>" alt="image" style="width: 150px; height: 150px; object-fit: cover;">
-        <?php endforeach; ?>
+    <div class="mb-4 text-sm text-gray-600 space-y-1">
+        <p><strong> WhatsApp :</strong> <?= htmlspecialchars($salon['whatsapp']) ?></p>
+        <p><strong> Téléphone :</strong> <?= htmlspecialchars($salon['phone']) ?></p>
     </div>
-<?php endif; ?>
 
-<hr>
+    <form method="POST" action="<?= ROOT_RELATIVE_PATH ?>/client/addFavori" class="mb-6">
+        <input type="hidden" name="salon_id" value="<?= $salon['id'] ?>">
+        <button type="submit"
+                class="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition">
+            Ajouter aux favoris
+        </button>
+    </form>
 
-<!-- Horaires -->
-<h3>Horaires d'ouverture</h3>
-<?php if (empty($horaires)): ?>
-    <p>Non spécifiés.</p>
-<?php else: ?>
-    <ul>
-        <?php foreach ($horaires as $h): ?>
-            <li><?= htmlspecialchars($h['jour']) ?> : <?= htmlspecialchars($h['heure_ouverture']) ?> - <?= htmlspecialchars($h['heure_fermeture']) ?></li>
+    <hr class="my-6">
+
+    <!-- Galerie -->
+    <h3 class="text-xl font-semibold mb-2"> Galerie</h3>
+    <?php if (empty($images)): ?>
+        <p class="text-gray-500 mb-4">Aucune image publiée.</p>
+    <?php else: ?>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+            <?php foreach ($images as $img): ?>
+                <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($img['image_path']) ?>"
+                     alt="Image"
+                     class="w-full h-32 object-cover rounded shadow">
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+
+    <!-- Horaires -->
+    <h3 class="text-xl font-semibold mb-2"> Horaires d'ouverture</h3>
+    <?php if (empty($horaires)): ?>
+        <p class="text-gray-500 mb-4">Non spécifiés.</p>
+    <?php else: ?>
+        <ul class="mb-6 text-gray-700">
+            <?php foreach ($horaires as $h): ?>
+                <li><?= htmlspecialchars($h['jour']) ?> : <?= htmlspecialchars($h['heure_ouverture']) ?> - <?= htmlspecialchars($h['heure_fermeture']) ?></li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
+
+    <!-- Services -->
+    <h3 class="text-xl font-semibold mb-2"> Services proposés</h3>
+    <ul class="mb-6 text-gray-700 space-y-1">
+        <?php foreach ($services as $s): ?>
+            <li><strong><?= htmlspecialchars($s['name']) ?></strong> — <?= $s['price'] ?>$ (<?= $s['duration'] ?> min)</li>
         <?php endforeach; ?>
     </ul>
-<?php endif; ?>
 
-<hr>
+    <!-- Avis -->
+    <h3 class="text-xl font-semibold mb-2"> Avis</h3>
+    <?php if (empty($avis)): ?>
+        <p class="text-gray-500 mb-4">Aucun avis pour ce salon.</p>
+    <?php else: ?>
+        <ul class="mb-6 space-y-2 text-gray-700">
+            <?php foreach ($avis as $a): ?>
+                <li class="border p-2 rounded bg-gray-50">
+                    <strong><?= htmlspecialchars($a['name']) ?></strong> (<?= $a['note'] ?>/5) :
+                    <div class="whitespace-pre-line"><?= nl2br(htmlspecialchars($a['commentaire'])) ?></div>
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    <?php endif; ?>
 
-<!-- Services -->
-<h3>Services proposés</h3>
-<ul>
-    <?php foreach ($services as $s): ?>
-        <li><strong><?= htmlspecialchars($s['name']) ?></strong> — <?= $s['price'] ?>$ (<?= $s['duration'] ?> min)</li>
-    <?php endforeach; ?>
-</ul>
+    <!-- Formulaire Avis -->
+    <h4 class="text-lg font-semibold mt-6 mb-2"> Laisser un avis</h4>
+    <form method="POST" action="<?= ROOT_RELATIVE_PATH ?>/client/addAvis" class="space-y-4">
+        <input type="hidden" name="salon_id" value="<?= $salon['id'] ?>">
 
-<hr>
+        <div>
+            <label class="block text-sm font-medium">Note :</label>
+            <select name="note" required class="border rounded p-2 w-full">
+                <option value="">--</option>
+                <option value="1">⭐</option>
+                <option value="2">⭐⭐</option>
+                <option value="3">⭐⭐⭐</option>
+                <option value="4">⭐⭐⭐⭐</option>
+                <option value="5">⭐⭐⭐⭐⭐</option>
+            </select>
+        </div>
 
-<!-- Avis -->
-<h3>Avis</h3>
-<?php if (empty($avis)): ?>
-    <p>Aucun avis pour ce salon.</p>
-<?php else: ?>
-    <ul>
-        <?php foreach ($avis as $a): ?>
-            <li><strong><?= htmlspecialchars($a['name']) ?></strong> (<?= $a['note'] ?>/5) : <?= nl2br(htmlspecialchars($a['commentaire'])) ?></li>
-        <?php endforeach; ?>
-    </ul>
-<?php endif; ?>
+        <div>
+            <label class="block text-sm font-medium">Commentaire :</label>
+            <textarea name="commentaire" rows="3" required class="border rounded p-2 w-full"></textarea>
+        </div>
 
-<!-- Formulaire Avis -->
-<h4>Laisser un avis</h4>
-<form method="POST" action="<?= ROOT_RELATIVE_PATH ?>/client/addAvis">
-    <input type="hidden" name="salon_id" value="<?= $salon['id'] ?>">
-    
-    <label>Note :</label>
-    <select name="note" required>
-        <option value="">--</option>
-        <option value="1">⭐</option>
-        <option value="2">⭐⭐</option>
-        <option value="3">⭐⭐⭐</option>
-        <option value="4">⭐⭐⭐⭐</option>
-        <option value="5">⭐⭐⭐⭐⭐</option>
-    </select><br><br>
+        <button type="submit"
+                class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
+            Envoyer
+        </button>
+    </form>
 
-    <label>Commentaire :</label><br>
-    <textarea name="commentaire" rows="3" required></textarea><br><br>
+    <div class="mt-6">
+        <a href="<?= ROOT_RELATIVE_PATH ?>/client/dashboard" class="text-indigo-600 hover:underline">
+             Retour au tableau de bord
+        </a>
+    </div>
+</div>
 
-    <button type="submit">Envoyer</button>
-</form>
-
-<p><a href="<?= ROOT_RELATIVE_PATH ?>/client/dashboard">⬅ Retour au tableau de bord</a></p>
-
-<?php require_once dirname(__DIR__) . '/layouts/footer.php'; ?>
+<?php
+$content = ob_get_clean();
+require_once dirname(__DIR__) . '/layouts/client.php';
+?>

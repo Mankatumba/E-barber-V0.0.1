@@ -1,16 +1,18 @@
-<?php require_once __DIR__ . '/../layouts/header.php'; ?>
+<?php ob_start(); ?>
 
-<h2>Mon Salon</h2>
+<h2 class="text-2xl font-bold mb-4">Mon Salon</h2>
 
 <?php if (isset($_SESSION['success'])): ?>
-    <p style="color: green;"><?= $_SESSION['success']; unset($_SESSION['success']); ?></p>
+    <div class="bg-green-100 text-green-800 p-3 rounded mb-4">
+        <?= $_SESSION['success']; unset($_SESSION['success']); ?>
+    </div>
 <?php endif; ?>
 
-<div style="display: flex; gap: 20px;">
+<div class="flex flex-col md:flex-row gap-6 mb-6">
     <div>
-        <img src="<?= UPLOADS_URL . '/' . (!empty($salon['profile_picture']) ? htmlspecialchars($salon['profile_picture']) : 'default.png') ?>" alt="Photo de profil" width="150">
+        <img src="<?= UPLOADS_URL . '/' . (!empty($salon['profile_picture']) ? htmlspecialchars($salon['profile_picture']) : 'default.png') ?>" alt="Photo de profil" class="w-40 h-40 object-cover rounded shadow">
     </div>
-    <div>
+    <div class="space-y-2">
         <p><strong>Nom :</strong> <?= htmlspecialchars($salon['name']) ?></p>
         <p><strong>Description :</strong><br> <?= nl2br(htmlspecialchars($salon['description'])) ?></p>
         <p><strong>Catégorie :</strong> <?= ucfirst($salon['category']) ?></p>
@@ -20,59 +22,62 @@
     </div>
 </div>
 
-<hr>
+<hr class="my-6">
 
-<h3>Statistiques</h3>
-<ul>
+<h3 class="text-lg font-semibold mb-2">Statistiques</h3>
+<ul class="list-disc list-inside mb-6">
     <li><strong>Nombre de clients abonnés :</strong> <?= $nbFavoris ?? '0' ?></li>
     <li><strong>Nombre de réservations :</strong> <?= $nbRdv ?? '0' ?></li>
     <li><strong>Moyenne des avis :</strong> <?= number_format($avgAvis ?? 0, 1) ?>/5</li>
 </ul>
 
-<hr>
+<hr class="my-6">
 
-<h3>Horaires d'ouverture</h3>
+<h3 class="text-lg font-semibold mb-2">Horaires d'ouverture</h3>
 <?php if (empty($horaires)): ?>
-    <p>Aucun horaire défini.</p>
+    <p class="text-gray-500 mb-4">Aucun horaire défini.</p>
 <?php else: ?>
-    <ul>
+    <ul class="mb-4">
         <?php foreach ($horaires as $h): ?>
             <li><?= htmlspecialchars($h['jour']) ?> : <?= htmlspecialchars($h['heure_debut']) ?> - <?= htmlspecialchars($h['heure_fin']) ?></li>
         <?php endforeach; ?>
     </ul>
 <?php endif; ?>
 
-<hr>
+<hr class="my-6">
 
-<h3>Services</h3>
+<h3 class="text-lg font-semibold mb-2">Services</h3>
 <?php if (empty($services)): ?>
-    <p>Aucun service enregistré.</p>
+    <p class="text-gray-500 mb-4">Aucun service enregistré.</p>
 <?php else: ?>
-    <ul>
+    <ul class="mb-4">
         <?php foreach ($services as $s): ?>
             <li><?= htmlspecialchars($s['name']) ?> — <?= htmlspecialchars($s['price']) ?> $ (<?= $s['duration'] ?> min)</li>
         <?php endforeach; ?>
     </ul>
 <?php endif; ?>
 
-<hr>
+<hr class="my-6">
 
-<h3>Galerie de photos</h3>
+<h3 class="text-lg font-semibold mb-2">Galerie de photos</h3>
 <?php if (empty($images)): ?>
-    <p>Aucune image publiée.</p>
+    <p class="text-gray-500 mb-4">Aucune image publiée.</p>
 <?php else: ?>
-    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+    <div class="flex flex-wrap gap-3 mb-4">
         <?php foreach ($images as $img): ?>
-            <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($img['image_path']) ?>" alt="Photo" width="120" style="border-radius: 8px;">
+            <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($img['image_path']) ?>" alt="Photo" class="w-28 h-28 object-cover rounded shadow">
         <?php endforeach; ?>
     </div>
 <?php endif; ?>
-<p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/gallery">Gérer la galerie</a></p>
 
-<hr>
+<a href="<?= ROOT_RELATIVE_PATH ?>/salon/gallery" class="text-blue-600 hover:underline block mb-4">📸 Gérer la galerie</a>
 
-<p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/edit_profile"> Modifier mon profil</a></p>
-<p><a href="<?= ROOT_RELATIVE_PATH ?>/salon/services">Gérer mes services</a></p>
-<p><a href="<?= ROOT_RELATIVE_PATH ?>/auth/logout"> Se déconnecter</a></p>
+<hr class="my-6">
 
-<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+<div class="space-y-2">
+    <a href="<?= ROOT_RELATIVE_PATH ?>/salon/edit_profile" class="text-blue-600 hover:underline block">Modifier mon profil</a>
+    <a href="<?= ROOT_RELATIVE_PATH ?>/salon/services" class="text-blue-600 hover:underline block">Gérer mes services</a>
+    <a href="<?= ROOT_RELATIVE_PATH ?>/auth/logout" class="text-red-600 hover:underline block">Se déconnecter</a>
+</div>
+
+<?php $content = ob_get_clean(); require_once __DIR__ . '/../layouts/salon.php'; ?>

@@ -17,7 +17,7 @@
         <?php foreach ($rdvs as $rdv): ?>
             <tr>
                 <td><?= htmlspecialchars($rdv['salon_name']) ?></td>
-                <td><?= htmlspecialchars($rdv['client_name']) ?></td>
+                <td><?= htmlspecialchars($rdv['user_name']) ?></td>
                 <td><?= htmlspecialchars($rdv['date']) ?></td>
                 <td><?= htmlspecialchars($rdv['heure']) ?></td>
                 <td><?= htmlspecialchars($rdv['statut']) ?></td>
