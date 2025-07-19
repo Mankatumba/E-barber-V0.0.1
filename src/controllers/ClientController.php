@@ -79,34 +79,6 @@ public function dashboard()
         header('Location: ' . ROOT_RELATIVE_PATH . '/client/dashboard');
         exit;
     }
-public function reserver()
-
-{
-require_once __DIR__ . '/../config/database.php';
-$pdo = getPDO();
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $data = [
-            'salon_id'    => $_POST['salon_id'] ?? null,
-            'service_id'  => $_POST['service_id'] ?? null,
-            'date'        => $_POST['date'] ?? null,
-            'heure'       => $_POST['heure'] ?? null,
-            'is_domicile' => $_POST['is_domicile'] ?? 0,
-            'status'      => $_POST['status'] ?? 'en attente',
-            'user_id'     => $_SESSION['user']['id'] ?? null,
-        ];
-
-        // Vérification minimale
-        if (!$data['user_id'] || !$data['service_id']) {
-            die('Des champs sont manquants.');
-        }
-
-        $rdvModel = new RdvModel();
-        $rdvModel->create($data);
-
-        header('Location: ' . ROOT_RELATIVE_PATH . '/client/rdv');
-        exit;
-    }
-}
 
 public function valider_reservation()
 {
@@ -210,6 +182,11 @@ public function annuler_reservation()
     $stmt->execute([$id]);
     $images = $stmt->fetchAll();
 
+    //horaire
+    $stmt = $pdo->prepare("SELECT * FROM horaires_ouverture WHERE salon_id = ?");
+    $stmt->execute([$id]);
+    $horaires = $stmt->fetchAll();
+
     require_once __DIR__ . '/../../views/client/salon_view.php';
 }
 
@@ -281,8 +258,51 @@ public function addAvis()
     http_response_code(400);
     echo "Requête invalide.";
 }
+public function reserver()
+{
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
 
+    // Vérifier que l'utilisateur est bien connecté et est un client
+    if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'client') {
+        header('Location: ' . ROOT_RELATIVE_PATH . '/login');
+        exit;
+    }
 
+    $userId = $_SESSION['user']['id'];
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $salonId = $_POST['salon_id'] ?? null;
+        $serviceId = $_POST['service_id'] ?? null;
+        $date = $_POST['date'] ?? null;
+        $isDomicile = isset($_POST['is_domicile']) ? 1 : 0;
+
+        // Validation simple
+        if ($salonId && $serviceId && $date) {
+            $stmt = $pdo->prepare("INSERT INTO rdv (user_id, salon_id, service_id, date, is_domicile, status, created_at)
+                                   VALUES (?, ?, ?, ?, ?, ?, NOW())");
+
+            $stmt->execute([
+                $userId,
+                $salonId,
+                $serviceId,
+                $date,
+                $isDomicile,
+                'en_attente' // statut par défaut
+            ]);
+
+            $_SESSION['success'] = "Votre réservation a bien été enregistrée.";
+            header('Location: ' . ROOT_RELATIVE_PATH . '/client/mes_rdv'); // Rediriger vers une page de confirmation
+            exit;
+        } else {
+            $_SESSION['error'] = "Tous les champs sont obligatoires.";
+        }
+    }
+
+    // Si GET, on redirige vers l'accueil ou une page erreur
+    header('Location: ' . ROOT_RELATIVE_PATH . '/client/dashboard');
+    exit;
+}
 
 
 }

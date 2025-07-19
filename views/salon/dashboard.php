@@ -10,7 +10,7 @@
 
 <div class="flex flex-col md:flex-row gap-6 mb-6">
     <div>
-        <img src="<?= UPLOADS_URL . '/' . (!empty($salon['profile_picture']) ? htmlspecialchars($salon['profile_picture']) : 'default.png') ?>" alt="Photo de profil" class="w-40 h-40 object-cover rounded shadow">
+        <img src="<?= UPLOADS_URL . '/' . (!empty($salon['profile_picture']) ? htmlspecialchars($salon['profile_picture']) : 'default.png') ?>" alt="Photo de profil" class="w-30 h-30 object-cover rounded shadow">
     </div>
     <div class="space-y-2">
         <p><strong>Nom :</strong> <?= htmlspecialchars($salon['name']) ?></p>

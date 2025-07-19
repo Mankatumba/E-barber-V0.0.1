@@ -5,8 +5,7 @@
     <h2 class="text-2xl font-bold mb-4 text-indigo-600"><?= htmlspecialchars($salon['name']) ?> <span class="text-sm text-gray-500">(<?= ucfirst($salon['category']) ?>)</span></h2>
 
     <?php if (!empty($salon['profile_picture'])): ?>
-        <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($salon['profile_picture']) ?>" alt="photo"
-             class="w-full max-w-md rounded-lg shadow mb-4">
+         <img src="<?= UPLOADS_URL . '/' . (!empty($salon['profile_picture']) ? htmlspecialchars($salon['profile_picture']) : 'default.png') ?>" alt="Photo de profil" class="w-20 h-20 object-cover rounded shadow">
     <?php endif; ?>
 
     <p class="mb-3 text-gray-700 whitespace-pre-line"><?= nl2br(htmlspecialchars($salon['description'])) ?></p>
@@ -42,23 +41,29 @@
 <?php else: ?>
     <div class="flex flex-wrap gap-3 mb-4">
         <?php foreach ($images as $img): ?>
-            <img src="<?= UPLOADS_URL . '/' . htmlspecialchars($img['image_path']) ?>" alt="Photo" class="w-28 h-28 object-cover rounded shadow">
+            <img src="<?= UPLOADS_URL . '/' . htmlspecialchars($img['image_path']) ?>" alt="Photo" class="w-40 h-40 object-cover rounded shadow">
         <?php endforeach; ?>
     </div>
 <?php endif; ?>
 
 
     <!-- Horaires -->
-    <h3 class="text-xl font-semibold mb-2"> Horaires d'ouverture</h3>
-    <?php if (empty($horaires)): ?>
-        <p class="text-gray-500 mb-4">Non spécifiés.</p>
-    <?php else: ?>
-        <ul class="mb-6 text-gray-700">
-            <?php foreach ($horaires as $h): ?>
-                <li><?= htmlspecialchars($h['jour']) ?> : <?= htmlspecialchars($h['heure_ouverture']) ?> - <?= htmlspecialchars($h['heure_fermeture']) ?></li>
-            <?php endforeach; ?>
-        </ul>
-    <?php endif; ?>
+   <h3 class="text-lg font-semibold mb-2">Horaires d'ouverture</h3>
+
+<?php if (empty($horaires)): ?>
+    <p class="text-gray-500 mb-4">Ce salon n'a pas encore publié ses horaires.</p>
+<?php else: ?>
+    <ul class="text-sm text-gray-700 mb-4">
+        <?php foreach ($horaires as $h): ?>
+            <li>
+                <?= htmlspecialchars($h['jour']) ?> : 
+                <?= htmlspecialchars($h['heure_debut']) ?> - 
+                <?= htmlspecialchars($h['heure_fin']) ?>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+<?php endif; ?>
+
 
     <!-- Services -->
     <h3 class="text-xl font-semibold mb-2"> Services proposés</h3>

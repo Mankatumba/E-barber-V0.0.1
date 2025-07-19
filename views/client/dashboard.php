@@ -74,7 +74,7 @@
             <h4 class="font-semibold text-lg"><?= htmlspecialchars($salon['name']) ?> (<?= ucfirst($salon['category']) ?>)</h4>
 
             <?php if (!empty($salon['profile_picture'])): ?>
-                <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($salon['profile_picture']) ?>" alt="photo" class="w-full h-40 object-cover mt-2 mb-3 rounded">
+                 <img src="<?= UPLOADS_URL . '/' . (!empty($salon['profile_picture']) ? htmlspecialchars($salon['profile_picture']) : 'default.png') ?>" alt="photo" class="w-full h-40 object-cover mt-2 mb-3 rounded">
             <?php endif; ?>
 
             <p class="text-sm text-gray-700 mb-3"><?= nl2br(htmlspecialchars(substr($salon['description'], 0, 100))) ?>...</p>
