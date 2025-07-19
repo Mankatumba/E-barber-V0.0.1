@@ -22,4 +22,4 @@ spl_autoload_register(function ($class) {
 
 $url = $_GET['url'] ?? '';
 $router = new Router($url);
-$router->dispatch();
+$router->dispatch();#ligne 25

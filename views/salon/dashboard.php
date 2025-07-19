@@ -58,19 +58,19 @@
 <?php endif; ?>
 
 <hr class="my-6">
-
 <h3 class="text-lg font-semibold mb-2">Galerie de photos</h3>
-<?php if (empty($images)): ?>
+<?php if (empty($galerie)): ?>
     <p class="text-gray-500 mb-4">Aucune image publiée.</p>
 <?php else: ?>
+
     <div class="flex flex-wrap gap-3 mb-4">
-        <?php foreach ($images as $img): ?>
-            <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($img['image_path']) ?>" alt="Photo" class="w-28 h-28 object-cover rounded shadow">
+        <?php foreach ($galerie as $img): ?>
+           <img src="<?= UPLOADS_URL . '/' . htmlspecialchars($img['image_path']) ?>" alt="Photo" class="w-28 h-28 object-cover rounded shadow">
         <?php endforeach; ?>
     </div>
 <?php endif; ?>
 
-<a href="<?= ROOT_RELATIVE_PATH ?>/salon/gallery" class="text-blue-600 hover:underline block mb-4">📸 Gérer la galerie</a>
+<a href="<?= ROOT_RELATIVE_PATH ?>/salon/gallery" class="text-blue-600 hover:underline block mb-4">Gérer la galerie</a>
 
 <hr class="my-6">
 

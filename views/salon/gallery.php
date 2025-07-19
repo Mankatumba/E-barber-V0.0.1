@@ -24,11 +24,11 @@
 </form>
 
 <!-- Galerie -->
-<?php if (empty($images)): ?>
+<?php if (empty($galerie)): ?>
     <p class="text-gray-600">Aucune image pour le moment.</p>
 <?php else: ?>
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-        <?php foreach ($images as $img): ?>
+        <?php foreach ($galerie as $img): ?>
             <div class="text-center">
                 <img src="<?= UPLOADS_URL . '/' . htmlspecialchars($img['image_path']) ?>"
                      alt="Photo"
@@ -36,7 +36,7 @@
                 <form method="POST"
                       action="<?= ROOT_RELATIVE_PATH ?>/salon/gallery/delete/<?= $img['id'] ?>"
                       onsubmit="return confirm('Supprimer cette image ?');">
-                    <button type="submit" class="text-red-600 hover:underline">🗑 Supprimer</button>
+                    <button type="submit" class="text-red-600 hover:underline"> Supprimer</button>
                 </form>
             </div>
         <?php endforeach; ?>
@@ -44,7 +44,7 @@
 <?php endif; ?>
 
 <p class="mt-10">
-    <a href="<?= ROOT_RELATIVE_PATH ?>/salon/dashboard" class="text-blue-600 hover:underline">← Retour au tableau de bord</a>
+    <a href="<?= ROOT_RELATIVE_PATH ?>/salon/dashboard" class="text-blue-600 hover:underline">Retour au tableau de bord</a>
 </p>
 
 <?php $content = ob_get_clean(); require_once __DIR__ . '/../layouts/salon.php'; ?>

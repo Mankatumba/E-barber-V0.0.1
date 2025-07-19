@@ -1,25 +1,31 @@
 <?php
-// database.php
 
-$host = '127.0.0.1';      // adresse du serveur MySQL
-$db   = 'e_barber';       // nom de ta base de données
-$user = 'root';           // utilisateur MySQL (par défaut sous XAMPP : root)
-$pass = '';               // mot de passe (vide sous XAMPP par défaut)
-$charset = 'utf8mb4';     // charset recommandé
+if (!function_exists('getPDO')) {
+    function getPDO()
+    {
+        static $pdo = null;
 
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+        if ($pdo === null) {
+            $host = 'localhost';
+            $db   = 'e_barber';
+            $user = 'root';
+            $pass = '';
+            $charset = 'utf8mb4';
 
-$options = [
-    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION, // Gestion des erreurs en exceptions
-    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,       // fetch par défaut en tableau associatif
-    PDO::ATTR_EMULATE_PREPARES   => false,                  // pour utiliser les vraies requêtes préparées
-];
+            $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+            $options = [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+            ];
 
-try {
-    $pdo = new PDO($dsn, $user, $pass, $options);
-    return $pdo;
-} catch (PDOException $e) {
-    // En cas d’erreur de connexion, on affiche un message simple (adapter selon besoin)
-    echo 'Erreur de connexion à la base de données : ' . $e->getMessage();
-    exit;
+            try {
+                $pdo = new PDO($dsn, $user, $pass, $options);
+            } catch (\PDOException $e) {
+                throw new \PDOException($e->getMessage(), (int)$e->getCode());
+            }
+        }
+
+        return $pdo;
+    }
 }

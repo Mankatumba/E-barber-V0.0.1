@@ -15,14 +15,21 @@
         <p><strong> WhatsApp :</strong> <?= htmlspecialchars($salon['whatsapp']) ?></p>
         <p><strong> Téléphone :</strong> <?= htmlspecialchars($salon['phone']) ?></p>
     </div>
+<!-- Formulaire d'ajout aux favoris -->
+<form method="POST" action="<?= ROOT_RELATIVE_PATH ?>/client/addFavori" class="mb-6">
+    <input type="hidden" name="salon_id" value="<?= $salon['id'] ?>">
+    <button type="submit"
+            class="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition">
+        Ajouter aux favoris
+    </button>
+</form>
 
-    <form method="POST" action="<?= ROOT_RELATIVE_PATH ?>/client/addFavori" class="mb-6">
-        <input type="hidden" name="salon_id" value="<?= $salon['id'] ?>">
-        <button type="submit"
-                class="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 transition">
-            Ajouter aux favoris
-        </button>
-    </form>
+<!-- Formulaire de réservation -->
+<a href="<?= ROOT_RELATIVE_PATH ?>/client/reserver?salon_id=<?= $salon['id'] ?>" 
+   class="inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition">
+    Réserver un RDV
+</a>
+
 
     <hr class="my-6">
 

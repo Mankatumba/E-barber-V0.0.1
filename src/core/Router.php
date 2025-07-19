@@ -25,8 +25,9 @@ class Router
             if (class_exists($controllerName)) {
                 $controller = new $controllerName();
 
-                // Traitement spécial pour les URLs complexes de gallery
+                // Traitement spécial pour les URLs complexes de gallery et rdv
                 if ($controllerName === 'SalonController') {
+                    // GESTION GALLERY
                     if ($methodName === 'gallery') {
                         if (isset($params[0]) && $params[0] === 'upload') {
                             $methodName = 'uploadImage';
@@ -34,6 +35,14 @@ class Router
                         } elseif (isset($params[0]) && $params[0] === 'delete' && isset($params[1])) {
                             $methodName = 'deleteImage';
                             $params = [$params[1]];
+                        }
+                    }
+
+                    // GESTION RDV
+                    if ($segments[1] === 'rdv') {
+                        if (isset($segments[2]) && in_array($segments[2], ['valider', 'refuser', 'attente']) && isset($segments[3])) {
+                            $methodName = $segments[2] . 'Rdv'; // Ex: validerRdv
+                            $params = [$segments[3]];
                         }
                     }
                 }

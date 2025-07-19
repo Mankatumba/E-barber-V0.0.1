@@ -16,42 +16,52 @@ class ClientController
             exit;
         }
     }
+public function dashboard()
+{
+    $this->checkClient();
 
-    public function dashboard()
-    {
-        $this->checkClient();
-        $pdo = require __DIR__ . '/../config/database.php';
-        $clientId = $_SESSION['user']['id'];
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
 
-        // Infos client
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
-        $stmt->execute([$clientId]);
-        $client = $stmt->fetch();
+    $clientId = $_SESSION['user']['id'];
 
-        // Salons favoris
-            $clientId = $_SESSION['user']['id'];
-        $stmt = $pdo->prepare("SELECT s.* FROM favoris f JOIN salons s ON f.salon_id = s.id WHERE f.user_id = ?");
-        $stmt->execute([$clientId]);
-        $favoris = $stmt->fetchAll();
+    // Infos client
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->execute([$clientId]);
+    $client = $stmt->fetch();
 
-        // Rendez-vous
-        $stmt = $pdo->prepare("SELECT r.*, s.name AS salon_name FROM rdv r JOIN salons s ON r.salon_id = s.id WHERE r.user_id = ? ORDER BY r.date DESC");
-        $stmt->execute([$clientId]);
-        $rdv = $stmt->fetchAll();
+    // Salons favoris
+    $stmt = $pdo->prepare("SELECT s.* 
+                           FROM favoris f 
+                           JOIN salons s ON f.salon_id = s.id 
+                           WHERE f.user_id = ?");
+    $stmt->execute([$clientId]);
+    $favoris = $stmt->fetchAll();
 
+    // Rendez-vous
+    $stmt = $pdo->prepare("SELECT r.*, s.name AS salon_name 
+                           FROM rdv r 
+                           JOIN salons s ON r.salon_id = s.id 
+                           WHERE r.user_id = ? 
+                           ORDER BY r.date DESC");
+    $stmt->execute([$clientId]);
+    $rdv = $stmt->fetchAll();
 
-        // Avis donnés
-        $stmt = $pdo->prepare("SELECT a.*, s.name AS salon_name FROM avis a JOIN salons s ON a.salon_id = s.id WHERE a.user_id = ?");
-        $stmt->execute([$clientId]);
-        $avis = $stmt->fetchAll();
+    // Avis donnés
+    $stmt = $pdo->prepare("SELECT a.*, s.name AS salon_name 
+                           FROM avis a 
+                           JOIN salons s ON a.salon_id = s.id 
+                           WHERE a.user_id = ?");
+    $stmt->execute([$clientId]);
+    $avis = $stmt->fetchAll();
 
-        // Récupération de tous les salons
-        $stmt = $pdo->query("SELECT id, name, category, profile_picture, description FROM salons");
-        $salons = $stmt->fetchAll();
+    // Tous les salons
+    $stmt = $pdo->query("SELECT id, name, category, profile_picture, description 
+                         FROM salons");
+    $salons = $stmt->fetchAll();
 
-
-        require_once __DIR__ . '/../../views/client/dashboard.php';
-    }
+    require_once __DIR__ . '/../../views/client/dashboard.php';
+}
 
     public function deleteFavori($salonId)
     {
@@ -66,20 +76,88 @@ class ClientController
         header('Location: ' . ROOT_RELATIVE_PATH . '/client/dashboard');
         exit;
     }
+public function reserver()
 
-    public function cancelRdv($rdvId)
-    {
-        $this->checkClient();
-        $pdo = require __DIR__ . '/../config/database.php';
-        $clientId = $_SESSION['user']['id'];
+{
+require_once __DIR__ . '/../../views/client/reserver.php';
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $data = [
+            'salon_id'    => $_POST['salon_id'] ?? null,
+            'service_id'  => $_POST['service_id'] ?? null,
+            'date'        => $_POST['date'] ?? null,
+            'heure'       => $_POST['heure'] ?? null,
+            'is_domicile' => $_POST['is_domicile'] ?? 0,
+            'status'      => $_POST['status'] ?? 'en attente',
+            'user_id'     => $_SESSION['user']['id'] ?? null,
+        ];
 
-        $stmt = $pdo->prepare("UPDATE rdv SET statut = 'annulé' WHERE id = ? AND user_id = ?");
-        $stmt->execute([$rdvId, $clientId]);
+        // Vérification minimale
+        if (!$data['user_id'] || !$data['service_id']) {
+            die('Des champs sont manquants.');
+        }
 
-        $_SESSION['success'] = "Rendez-vous annulé.";
-        header('Location: ' . ROOT_RELATIVE_PATH . '/client/dashboard');
+        $rdvModel = new RdvModel();
+        $rdvModel->create($data);
+
+        header('Location: ' . ROOT_RELATIVE_PATH . '/client/rdv');
         exit;
     }
+}
+
+public function valider_reservation()
+{
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $salon_id = $_POST['salon_id'] ?? null;
+        $client_id = $_SESSION['user_id'] ?? null; 
+        $service_id = $_POST['service_id'] ?? null;
+        $date = $_POST['date'] ?? null;
+        $heure = $_POST['heure'] ?? null;
+        $is_domicile = $_POST['is_domicile'] ?? 0;
+
+        if (!$salon_id || !$client_id || !$service_id || !$date || !$heure) {
+            die("Données invalides.");
+        }
+
+        $stmt = $this->pdo->prepare("INSERT INTO rdv (salon_id, user_id, service_id, date, heure, statut, is_domicile)
+                                     VALUES (?, ?, ?, ?, ?, 'en_attente', ?)");
+        $stmt->execute([$salon_id, $client_id, $service_id, $date, $heure, $is_domicile]);
+
+        header("Location: " . ROOT_RELATIVE_PATH . "/client/mes_reservations");
+        exit;
+    }
+}
+
+
+public function annuler_reservation()
+{
+    if (!isset($_GET['id'])) {
+        die("ID réservation manquant.");
+    }
+
+    $reservation_id = $_GET['id'];
+    $client_id = $_SESSION['user_id'];
+
+    // Vérifier que la réservation appartient bien au client
+    $stmt = $this->pdo->prepare("SELECT * FROM rdv WHERE id = ? AND client_id = ?");
+    $stmt->execute([$reservation_id, $client_id]);
+    $rdv = $stmt->fetch();
+
+    if (!$rdv) {
+        die("Réservation introuvable.");
+    }
+
+    // Supprimer la réservation
+    $stmt = $this->pdo->prepare("DELETE FROM rdv WHERE id = ?");
+    $stmt->execute([$reservation_id]);
+
+    header("Location: " . ROOT_RELATIVE_PATH . "/client/mes_reservations");
+    exit;
+}
+
 
     public function deleteAvis($avisId)
     {
@@ -94,12 +172,13 @@ class ClientController
         header('Location: ' . ROOT_RELATIVE_PATH . '/client/dashboard');
         exit;
     }
-
-
-    public function salon($id)
+    
+public function salon($id)
 {
     $this->checkClient();
-    $pdo = require __DIR__ . '/../config/database.php';
+
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
 
     // Récupération du salon
     $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
@@ -117,7 +196,7 @@ class ClientController
     $stmt->execute([$id]);
     $services = $stmt->fetchAll();
 
-    // Avis (facultatif)
+    // Avis
     $stmt = $pdo->prepare("SELECT a.*, u.name FROM avis a JOIN users u ON a.user_id = u.id WHERE a.salon_id = ?");
     $stmt->execute([$id]);
     $avis = $stmt->fetchAll();
@@ -126,22 +205,24 @@ class ClientController
 }
 public function addFavori()
 {
-    session_start();
     if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'client') {
         header('Location: ' . ROOT_RELATIVE_PATH . '/auth');
         exit;
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['salon_id'])) {
-        $pdo = require __DIR__ . '/../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
+        $pdo = getPDO();
+
         $clientId = $_SESSION['user']['id'];
         $salonId = intval($_POST['salon_id']);
 
         // Vérifie si le favori existe déjà
-        $stmt = $pdo->prepare("SELECT * FROM favoris WHERE client_id = ? AND salon_id = ?");
+        $stmt = $pdo->prepare("SELECT * FROM favoris WHERE user_id = ? AND salon_id = ?");
         $stmt->execute([$clientId, $salonId]);
+
         if (!$stmt->fetch()) {
-            $stmt = $pdo->prepare("INSERT INTO favoris (client_id, salon_id) VALUES (?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO favoris (user_id, salon_id) VALUES (?, ?)");
             $stmt->execute([$clientId, $salonId]);
         }
 
@@ -153,6 +234,8 @@ public function addFavori()
     http_response_code(400);
     echo "Requête invalide.";
 }
+
+
 public function addAvis()
 {
     session_start();

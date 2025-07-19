@@ -1,6 +1,6 @@
 <?php ob_start(); ?>
 
-<h2 class="text-2xl font-bold mb-6">Définir les horaires pour : <?= htmlspecialchars($service['name']) ?></h2>
+<h2 class="text-2xl font-bold mb-6">Définir les horaires pour :</h2>
 
 <?php if (!empty($errors)) : ?>
     <ul class="bg-red-100 text-red-700 p-4 rounded mb-6">
@@ -49,7 +49,7 @@
 
     <div class="flex gap-4 items-center">
         <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
-            💾 Enregistrer
+             Enregistrer
         </button>
         <a href="<?= ROOT_RELATIVE_PATH ?>/salon/services" class="text-gray-600 hover:underline">
             Retour

@@ -72,7 +72,8 @@ public function registerClient()
 
 public function login()
 {
-    $pdo = require __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
 
     $error = null;
 
@@ -81,7 +82,7 @@ public function login()
         $password = $_POST['password'];
 
         // 1. Vérification dans la table users (clients et super admin)
-        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?"); #ligne 84
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 

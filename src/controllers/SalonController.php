@@ -18,56 +18,80 @@ class SalonController
     }
 
     public function dashboard()
-    {
-        $this->checkSalon();
-        $pdo = require __DIR__ . '/../config/database.php';
-        $salonId = $_SESSION['user']['id'];
+{
+    $this->checkSalon();
 
-        // Salon
-        $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
-        $stmt->execute([$salonId]);
-        $salon = $stmt->fetch();
-
-        // Statistiques
-        $nbFavoris = $pdo->prepare("SELECT COUNT(*) FROM favoris WHERE salon_id = ?");
-        $nbFavoris->execute([$salonId]);
-        $nbFavoris = $nbFavoris->fetchColumn();
-
-        $nbRdv = $pdo->prepare("SELECT COUNT(*) FROM rdv WHERE salon_id = ?");
-        $nbRdv->execute([$salonId]);
-        $nbRdv = $nbRdv->fetchColumn();
-
-        $avgAvis = $pdo->prepare("SELECT AVG(note) FROM avis WHERE salon_id = ?");
-        $avgAvis->execute([$salonId]);
-        $avgAvis = $avgAvis->fetchColumn() ?: 0;
-
-        // Services
-        $stmt = $pdo->prepare("SELECT * FROM services WHERE salon_id = ?");
-        $stmt->execute([$salonId]);
-        $services = $stmt->fetchAll();
-
-        // Horaires d'ouverture
-        $stmt = $pdo->prepare("SELECT * FROM horaires_ouverture WHERE salon_id = ?");
-        $stmt->execute([$salonId]);
-        $horaires = $stmt->fetchAll();
-
-        // Galerie
-        $stmt = $pdo->prepare("SELECT * FROM galerie WHERE salon_id = ?");
-        $stmt->execute([$salonId]);
-        $galerie = $stmt->fetchAll();
-
-        // Avis
-        $stmt = $pdo->prepare("SELECT a.*, u.name AS client FROM avis a JOIN users u ON a.user_id = u.id WHERE a.salon_id = ? ORDER BY a.id DESC");
-        $stmt->execute([$salonId]);
-        $avis = $stmt->fetchAll();
-
-        require_once __DIR__ . '/../../views/salon/dashboard.php';
+    // Assure que la session contient bien les données utilisateur
+    if (!isset($_SESSION['user']['id'])) {
+        die('Salon non authentifié.');
     }
+
+    $salonId = $_SESSION['user']['id'];
+
+    // Connexion à la base de données
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
+
+    // Infos du salon
+    $stmt = $pdo->prepare("SELECT * FROM salons WHERE id = ?");
+    $stmt->execute([$salonId]);
+    $salon = $stmt->fetch();
+
+    if (!$salon) {
+        die("Salon introuvable.");
+    }
+
+    // Statistiques
+    $nbFavoris = $pdo->prepare("SELECT COUNT(*) FROM favoris WHERE salon_id = ?");
+    $nbFavoris->execute([$salonId]);
+    $nbFavoris = $nbFavoris->fetchColumn();
+
+    $nbRdv = $pdo->prepare("SELECT COUNT(*) FROM rdv WHERE salon_id = ?");
+    $nbRdv->execute([$salonId]);
+    $nbRdv = $nbRdv->fetchColumn();
+
+    $avgAvis = $pdo->prepare("SELECT AVG(note) FROM avis WHERE salon_id = ?");
+    $avgAvis->execute([$salonId]);
+    $avgAvis = $avgAvis->fetchColumn();
+    $avgAvis = $avgAvis ?: 0;
+
+    // Services
+    $stmt = $pdo->prepare("SELECT * FROM services WHERE salon_id = ?");
+    $stmt->execute([$salonId]);
+    $services = $stmt->fetchAll();
+
+    // Horaires
+    $stmt = $pdo->prepare("SELECT * FROM horaires_ouverture WHERE salon_id = ?");
+    $stmt->execute([$salonId]);
+    $horaires = $stmt->fetchAll();
+
+    // Galerie
+    $stmt = $pdo->prepare("SELECT * FROM galerie WHERE salon_id = ?");
+    $stmt->execute([$salonId]);
+    $galerie = $stmt->fetchAll();
+
+    // Avis (avec nom du client)
+    $stmt = $pdo->prepare("
+        SELECT a.*, u.name AS client 
+        FROM avis a 
+        JOIN users u ON a.user_id = u.id 
+        WHERE a.salon_id = ? 
+        ORDER BY a.id DESC
+    ");
+    $stmt->execute([$salonId]);
+    $avis = $stmt->fetchAll();
+
+    // Vue
+    require_once __DIR__ . '/../../views/salon/dashboard.php';
+}
+
 
     public function horaires()
     {
         $this->checkSalon();
-        $pdo = require __DIR__ . '/../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
+        $pdo = getPDO();
+
         $salonId = $_SESSION['user']['id'];
         $errors = [];
 
@@ -100,23 +124,28 @@ class SalonController
 
         require_once __DIR__ . '/../../views/salon/horaires.php';
     }
-public function gallery()
+    public function gallery()
 {
     $this->checkSalon();
-    $pdo = require __DIR__ . '/../config/database.php';
-    $salonId = $_SESSION['user']['id'];
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
 
+    $salonId = $_SESSION['user']['id'];
+ 
     $stmt = $pdo->prepare("SELECT * FROM galerie WHERE salon_id = ?");
     $stmt->execute([$salonId]);
-    $images = $stmt->fetchAll();
+    $galerie = $stmt->fetchAll();
 
     require_once __DIR__ . '/../../views/salon/gallery.php';
 }
 
+
 public function uploadImage()
 {
     $this->checkSalon();
-    $pdo = require __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
+
     $salonId = $_SESSION['user']['id'];
 
     if (!empty($_FILES['images']['name'][0])) {
@@ -140,15 +169,17 @@ public function uploadImage()
 public function deleteImage($id)
 {
     $this->checkSalon();
-    $pdo = require __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
+
     $salonId = $_SESSION['user']['id'];
 
     $stmt = $pdo->prepare("SELECT * FROM galerie WHERE id = ? AND salon_id = ?");
     $stmt->execute([$id, $salonId]);
-    $image = $stmt->fetch();
+    $galerie = $stmt->fetch();
 
-    if ($image) {
-        $path = UPLOADS_PATH . '/' . $image['image_path'];
+    if ($galerie) {
+        $path = UPLOADS_PATH . '/' . $galerie['image_path'];
         if (file_exists($path)) {
             unlink($path);
         }
@@ -165,7 +196,8 @@ public function deleteImage($id)
     public function edit_profile()
 {
     $this->checkSalon();
-    $pdo = require __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
     $salonId = $_SESSION['user']['id'];
     $errors = [];
 
@@ -183,7 +215,7 @@ public function deleteImage($id)
         $name = trim($_POST['name'] ?? '');
         $description = trim($_POST['description'] ?? '');
         $category = trim($_POST['category'] ?? '');
-        $contactPhone = trim($_POST['contact_phone'] ?? '');
+        $contactPhone = trim($_POST['phone'] ?? '');
         $whatsapp = trim($_POST['whatsapp'] ?? '');
         $latitude = trim($_POST['latitude'] ?? '');
         $longitude = trim($_POST['longitude'] ?? '');
@@ -206,7 +238,7 @@ public function deleteImage($id)
                 name = ?, 
                 description = ?, 
                 category = ?, 
-                contact_phone = ?, 
+                phone = ?, 
                 whatsapp = ?, 
                 latitude = ?, 
                 longitude = ?, 
@@ -230,7 +262,9 @@ public function deleteImage($id)
 public function services()
 {
     $this->checkSalon();
-    $pdo = require __DIR__ . '/../config/database.php';
+    require_once __DIR__ . '/../config/database.php';
+    $pdo = getPDO();
+
     $salonId = $_SESSION['user']['id'];
     $errors = [];
 
@@ -260,6 +294,47 @@ public function services()
     $services = $stmt->fetchAll();
 
     require_once __DIR__ . '/../../views/salon/services.php';
+}
+public function validerRdv($rdvId)
+{
+    $this->checkSalon();
+    $pdo = require __DIR__ . '/../config/database.php';
+    $salonId = $_SESSION['user']['id'];
+
+    $stmt = $pdo->prepare("UPDATE rdv SET status = 'confirmé' WHERE id = ? AND salon_id = ?");
+    $stmt->execute([$rdvId, $salonId]);
+
+    $_SESSION['success'] = "Rendez-vous confirmé.";
+    header('Location: ' . ROOT_RELATIVE_PATH . '/salon/rdv');
+    exit;
+}
+
+public function refuserRdv($rdvId)
+{
+    $this->checkSalon();
+    $pdo = require __DIR__ . '/../config/database.php';
+    $salonId = $_SESSION['user']['id'];
+
+    $stmt = $pdo->prepare("UPDATE rdv SET status = 'refusé' WHERE id = ? AND salon_id = ?");
+    $stmt->execute([$rdvId, $salonId]);
+
+    $_SESSION['success'] = "Rendez-vous refusé.";
+    header('Location: ' . ROOT_RELATIVE_PATH . '/salon/rdv');
+    exit;
+}
+
+public function attenteRdv($rdvId)
+{
+    $this->checkSalon();
+    $pdo = require __DIR__ . '/../config/database.php';
+    $salonId = $_SESSION['user']['id'];
+
+    $stmt = $pdo->prepare("UPDATE rdv SET status = 'en attente' WHERE id = ? AND salon_id = ?");
+    $stmt->execute([$rdvId, $salonId]);
+
+    $_SESSION['success'] = "Rendez-vous mis en attente.";
+    header('Location: ' . ROOT_RELATIVE_PATH . '/salon/rdv');
+    exit;
 }
 
 

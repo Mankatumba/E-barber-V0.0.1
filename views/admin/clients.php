@@ -33,9 +33,9 @@
                         </td>
                         <td class="px-4 py-2">
                             <?php if ($client['status'] === 'suspended'): ?>
-                                <a href="<?= ROOT_RELATIVE_PATH ?>/admin/unsuspend_client/<?= $client['id'] ?>" class="text-blue-600 hover:underline">✅ Réactiver</a>
+                                <a href="<?= ROOT_RELATIVE_PATH ?>/admin/unsuspend_client/<?= $client['id'] ?>" class="text-blue-600 hover:underline"> Réactiver</a>
                             <?php else: ?>
-                                <a href="<?= ROOT_RELATIVE_PATH ?>/admin/suspend_client/<?= $client['id'] ?>" class="text-red-600 hover:underline" onclick="return confirm('Suspendre ce client ?')">⛔ Suspendre</a>
+                                <a href="<?= ROOT_RELATIVE_PATH ?>/admin/suspend_client/<?= $client['id'] ?>" class="text-red-600 hover:underline" onclick="return confirm('Suspendre ce client ?')"> Suspendre</a>
                             <?php endif; ?>
                         </td>
                     </tr>

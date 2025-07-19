@@ -21,7 +21,9 @@ class AdminController
     {
         $this->checkAdmin();
 
-        $pdo = require __DIR__ . '/../config/database.php';
+       require_once __DIR__ . '/../config/database.php';
+       $pdo = getPDO();
+
 
         $salons = $pdo->query("SELECT COUNT(*) FROM salons")->fetchColumn();
         $clients = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'client'")->fetchColumn();
@@ -33,7 +35,9 @@ class AdminController
     {
         $this->checkAdmin();
 
-        $pdo = require __DIR__ . '/../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
+        $pdo = getPDO();
+
         $stmt = $pdo->query("SELECT * FROM salons ORDER BY created_at DESC");
         $salons = $stmt->fetchAll();
 
@@ -43,7 +47,9 @@ class AdminController
     public function createSalon()
     {
         $this->checkAdmin();
-        $pdo = require __DIR__ . '/../config/database.php';
+       require_once __DIR__ . '/../config/database.php';
+       $pdo = getPDO();
+
         $errors = [];
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -141,7 +147,9 @@ class AdminController
     {
         $this->checkAdmin();
 
-        $pdo = require __DIR__ . '/../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
+        $pdo = getPDO();
+
         $stmt = $pdo->query("SELECT * FROM users WHERE role = 'client' ORDER BY created_at DESC");
         $clients = $stmt->fetchAll();
 
@@ -210,7 +218,9 @@ class AdminController
     {
         $this->checkAdmin();
 
-        $pdo = require __DIR__ . '/../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
+        $pdo = getPDO();
+
         $stmt = $pdo->query("SELECT rdv.*, users.name as client_name, salons.name as salon_name 
                      FROM rdv
                      JOIN users ON rdv.user_id = users.id
