@@ -33,19 +33,20 @@
 
     <hr class="my-6">
 
-    <!-- Galerie -->
-    <h3 class="text-xl font-semibold mb-2"> Galerie</h3>
-    <?php if (empty($images)): ?>
-        <p class="text-gray-500 mb-4">Aucune image publiée.</p>
-    <?php else: ?>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
-            <?php foreach ($images as $img): ?>
-                <img src="<?= ROOT_RELATIVE_PATH ?>/uploads/<?= htmlspecialchars($img['image_path']) ?>"
-                     alt="Image"
-                     class="w-full h-32 object-cover rounded shadow">
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+
+  <!-- Galerie -->
+<h3 class="text-lg font-semibold mb-2">Galerie de photos</h3>
+
+<?php if (empty($images)): ?>
+    <p class="text-gray-500 mb-4">Aucune image publiée.</p>
+<?php else: ?>
+    <div class="flex flex-wrap gap-3 mb-4">
+        <?php foreach ($images as $img): ?>
+            <img src="<?= UPLOADS_URL . '/' . htmlspecialchars($img['image_path']) ?>" alt="Photo" class="w-28 h-28 object-cover rounded shadow">
+        <?php endforeach; ?>
+    </div>
+<?php endif; ?>
+
 
     <!-- Horaires -->
     <h3 class="text-xl font-semibold mb-2"> Horaires d'ouverture</h3>
@@ -83,7 +84,7 @@
     <?php endif; ?>
 
     <!-- Formulaire Avis -->
-    <h4 class="text-lg font-semibold mt-6 mb-2"> Laisser un avis</h4>
+    <h4 class="text-lg font-semibold mt-6 mb-2"> Laissez un avis</h4>
     <form method="POST" action="<?= ROOT_RELATIVE_PATH ?>/client/addAvis" class="space-y-4">
         <input type="hidden" name="salon_id" value="<?= $salon['id'] ?>">
 

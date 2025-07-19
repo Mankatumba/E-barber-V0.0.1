@@ -30,6 +30,8 @@ public function dashboard()
     $stmt->execute([$clientId]);
     $client = $stmt->fetch();
 
+    
+
     // Salons favoris
     $stmt = $pdo->prepare("SELECT s.* 
                            FROM favoris f 
@@ -66,7 +68,8 @@ public function dashboard()
     public function deleteFavori($salonId)
     {
         $this->checkClient();
-        $pdo = require __DIR__ . '/../config/database.php';
+        require __DIR__ . '/../config/database.php';
+        $pdo = getPDO();
         $clientId = $_SESSION['user']['id'];
 
         $stmt = $pdo->prepare("DELETE FROM favoris WHERE salon_id = ? AND user_id = ?");
@@ -79,7 +82,8 @@ public function dashboard()
 public function reserver()
 
 {
-require_once __DIR__ . '/../../views/client/reserver.php';
+require_once __DIR__ . '/../config/database.php';
+$pdo = getPDO();
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data = [
             'salon_id'    => $_POST['salon_id'] ?? null,
@@ -162,7 +166,8 @@ public function annuler_reservation()
     public function deleteAvis($avisId)
     {
         $this->checkClient();
-        $pdo = require __DIR__ . '/../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
+        $pdo = getPDO();
         $clientId = $_SESSION['user']['id'];
 
         $stmt = $pdo->prepare("DELETE FROM avis WHERE id = ? AND user_id = ?");
@@ -172,8 +177,7 @@ public function annuler_reservation()
         header('Location: ' . ROOT_RELATIVE_PATH . '/client/dashboard');
         exit;
     }
-    
-public function salon($id)
+  public function salon($id)
 {
     $this->checkClient();
 
@@ -201,8 +205,14 @@ public function salon($id)
     $stmt->execute([$id]);
     $avis = $stmt->fetchAll();
 
+    // Galerie
+    $stmt = $pdo->prepare("SELECT * FROM galerie WHERE salon_id = ?");
+    $stmt->execute([$id]);
+    $images = $stmt->fetchAll();
+
     require_once __DIR__ . '/../../views/client/salon_view.php';
 }
+
 public function addFavori()
 {
     if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'client') {
@@ -238,6 +248,7 @@ public function addFavori()
 
 public function addAvis()
 {
+    
     session_start();
     if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'client') {
         header('Location: ' . ROOT_RELATIVE_PATH . '/auth');
@@ -245,7 +256,8 @@ public function addAvis()
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $pdo = require __DIR__ . '/../config/database.php';
+        require_once __DIR__ . '/../config/database.php';
+        $pdo = getPDO();
         $clientId = $_SESSION['user']['id'];
         $salonId = intval($_POST['salon_id']);
         $note = intval($_POST['note']);
@@ -269,6 +281,8 @@ public function addAvis()
     http_response_code(400);
     echo "Requête invalide.";
 }
+
+
 
 
 }
